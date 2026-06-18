@@ -290,7 +290,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  function applyFilters() {}
+  function applyFilters() {
+    updateMedidasBar();
+
+    var q = document.getElementById('search').value.toLowerCase().trim();
+    var rubroInput = document.getElementById('filterRubro').value.trim();
+    var rubro = '';
+    if (rubroInput) {
+      if (rubroMap[rubroInput] !== undefined) rubro = rubroMap[rubroInput];
+      else if (!isNaN(rubroInput)) rubro = parseInt(rubroInput);
+      else {
+        var lc = rubroInput.toLowerCase();
+        for (var k in rubroMap) { if (k.toLowerCase().indexOf(lc) !== -1) { rubro = rubroMap[k]; break; } }
+      }
+    }
+    var subrubro = document.getElementById('filterSubRubro').value;
+    var stockF = document.getElementById('filterStock').value;
+    var terms = q ? q.split(/\s+/) : [];
+    var medidas = getMedidaValues();
+
+    filtered = [];
+    for (var i = 0; i < PRODUCTOS.length; i++) {
+      var p = PRODUCTOS[i];
+      var ok = true;
+      if (terms.length) {
+        for (var t = 0; t < terms.length; t++) {
+          if (p._search.indexOf(terms[t]) === -1) { ok = false; break; }
+        }
+      }
+      if (!ok) continue;
+      if (rubro && p.rubro != rubro) continue;
+      if (subrubro && p.subrubro != subrubro) continue;
+      if (stockF === 'pos' && p.stock <= 0) continue;
+      if (stockF === 'zero' && p.stock > 0) continue;
+      if (medidas && !matchMedidas(p.descL || p.desc, medidas)) continue;
+      filtered.push(p);
+    }
+
+    if (sortCriteria.length) {
+      filtered.sort(function(a, b) {
+        for (var s = 0; s < sortCriteria.length; s++) {
+          var field = sortCriteria[s].field;
+          var dir = sortCriteria[s].dir;
+          var va = a[field], vb = b[field];
+          if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
+          if (va < vb) return dir === 'asc' ? -1 : 1;
+          if (va > vb) return dir === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    currentPage = 0;
+    renderTable();
+  }
 
   function renderTable() {
     var start = currentPage * PAGE_SIZE;
@@ -615,63 +668,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     return true;
   }
-
-  // Patch applyFilters to use medidas
-  var origApplyFilters = applyFilters;
-  applyFilters = function() {
-    updateMedidasBar();
-
-    var q = document.getElementById('search').value.toLowerCase().trim();
-    var rubroInput = document.getElementById('filterRubro').value.trim();
-    var rubro = '';
-    if (rubroInput) {
-      if (rubroMap[rubroInput] !== undefined) rubro = rubroMap[rubroInput];
-      else if (!isNaN(rubroInput)) rubro = parseInt(rubroInput);
-      else {
-        var lc = rubroInput.toLowerCase();
-        for (var k in rubroMap) { if (k.toLowerCase().indexOf(lc) !== -1) { rubro = rubroMap[k]; break; } }
-      }
-    }
-    var subrubro = document.getElementById('filterSubRubro').value;
-    var stockF = document.getElementById('filterStock').value;
-    var terms = q ? q.split(/\s+/) : [];
-    var medidas = getMedidaValues();
-
-    filtered = [];
-    for (var i = 0; i < PRODUCTOS.length; i++) {
-      var p = PRODUCTOS[i];
-      var ok = true;
-      if (terms.length) {
-        for (var t = 0; t < terms.length; t++) {
-          if (p._search.indexOf(terms[t]) === -1) { ok = false; break; }
-        }
-      }
-      if (!ok) continue;
-      if (rubro && p.rubro != rubro) continue;
-      if (subrubro && p.subrubro != subrubro) continue;
-      if (stockF === 'pos' && p.stock <= 0) continue;
-      if (stockF === 'zero' && p.stock > 0) continue;
-      if (medidas && !matchMedidas(p.descL || p.desc, medidas)) continue;
-      filtered.push(p);
-    }
-
-    if (sortCriteria.length) {
-      filtered.sort(function(a, b) {
-        for (var s = 0; s < sortCriteria.length; s++) {
-          var field = sortCriteria[s].field;
-          var dir = sortCriteria[s].dir;
-          var va = a[field], vb = b[field];
-          if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
-          if (va < vb) return dir === 'asc' ? -1 : 1;
-          if (va > vb) return dir === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    currentPage = 0;
-    renderTable();
-  };
 
   document.getElementById('clearFilters').addEventListener('click', function() {
     document.getElementById('search').value = '';
