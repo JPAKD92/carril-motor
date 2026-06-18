@@ -121,7 +121,8 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
     <div class="filters">
       <input type="text" id="search" placeholder="Buscar por codigo o descripcion..." autofocus>
       <div class="filter-row">
-        <select id="filterRubro"><option value="">Todos los rubros</option></select>
+        <input type="text" id="filterRubro" list="rubroList" placeholder="Rubro (nombre o numero)..." style="flex:1;min-width:120px;">
+        <datalist id="rubroList"></datalist>
         <select id="filterSubRubro"><option value="">Sub-rubros</option></select>
       </div>
       <div class="filter-row">
@@ -184,6 +185,7 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
 </div>
 
 <script src="rubros.js"></script>
+<script src="subrubros.js"></script>
 <script src="data.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -232,13 +234,19 @@ document.addEventListener('DOMContentLoaded', function() {
   rubros.sort(function(a,b){return a-b;});
   subrubros.sort(function(a,b){return a-b;});
 
-  var selR = document.getElementById('filterRubro');
+  var rubroList = document.getElementById('rubroList');
   var selS = document.getElementById('filterSubRubro');
+  var rubroMap = {};
   for (var i = 0; i < rubros.length; i++) {
-    var o = document.createElement('option'); o.value = rubros[i]; o.textContent = (typeof RUBRO_NAMES !== 'undefined' && RUBRO_NAMES[rubros[i]] ? RUBRO_NAMES[rubros[i]] + ' (' + rubros[i] + ')' : 'Rubro ' + rubros[i]); selR.appendChild(o);
+    var rName = (typeof RUBRO_NAMES !== 'undefined' && RUBRO_NAMES[rubros[i]]) ? RUBRO_NAMES[rubros[i]] : 'Rubro';
+    var label = rName + ' (' + rubros[i] + ')';
+    rubroMap[label] = rubros[i];
+    rubroMap[String(rubros[i])] = rubros[i];
+    var o = document.createElement('option'); o.value = label; rubroList.appendChild(o);
   }
   for (var i = 0; i < subrubros.length; i++) {
-    var o = document.createElement('option'); o.value = subrubros[i]; o.textContent = 'Sub-rubro ' + subrubros[i]; selS.appendChild(o);
+    var sName = (typeof SUBRUBRO_NAMES !== 'undefined' && SUBRUBRO_NAMES[subrubros[i]]) ? SUBRUBRO_NAMES[subrubros[i]] : 'Varios';
+    var o = document.createElement('option'); o.value = subrubros[i]; o.textContent = sName + ' (' + subrubros[i] + ')'; selS.appendChild(o);
   }
 
   document.querySelectorAll('.lista-btn').forEach(function(b) {
@@ -269,7 +277,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function applyFilters() {
     var q = document.getElementById('search').value.toLowerCase().trim();
-    var rubro = document.getElementById('filterRubro').value;
+    var rubroInput = document.getElementById('filterRubro').value.trim();
+    var rubro = '';
+    if (rubroInput) {
+      if (rubroMap[rubroInput] !== undefined) rubro = rubroMap[rubroInput];
+      else if (!isNaN(rubroInput)) rubro = parseInt(rubroInput);
+      else {
+        var lc = rubroInput.toLowerCase();
+        for (var k in rubroMap) { if (k.toLowerCase().indexOf(lc) !== -1) { rubro = rubroMap[k]; break; } }
+      }
+    }
     var subrubro = document.getElementById('filterSubRubro').value;
     var stockF = document.getElementById('filterStock').value;
     var terms = q ? q.split(/\s+/) : [];
@@ -472,7 +489,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   var searchTimer;
   document.getElementById('search').addEventListener('input', function() { clearTimeout(searchTimer); searchTimer = setTimeout(applyFilters, 250); });
-  document.getElementById('filterRubro').addEventListener('change', applyFilters);
+  var rubroTimer;
+  document.getElementById('filterRubro').addEventListener('input', function() { clearTimeout(rubroTimer); rubroTimer = setTimeout(applyFilters, 300); });
   document.getElementById('filterSubRubro').addEventListener('change', applyFilters);
   document.getElementById('filterStock').addEventListener('change', applyFilters);
 
