@@ -56,6 +56,19 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
 .pagination button.active-page { background: #1a73e8; color: white; border-color: #1a73e8; }
 #loading { display: flex; align-items: center; justify-content: center; height: 200px; font-size: 1.1rem; color: #888; }
 
+/* Medidas flotante */
+.medidas-bar { padding: 8px 12px; background: #e8f0fe; border-bottom: 2px solid #1a73e8; display: none; flex-wrap: wrap; gap: 6px; align-items: center; }
+.medidas-bar.visible { display: flex; }
+.medidas-bar label { font-weight: 700; font-size: .78rem; color: #1a1a2e; white-space: nowrap; }
+.medidas-bar input { padding: 5px 8px; border: 1px solid #90caf9; border-radius: 4px; font-size: .85rem; width: 70px; text-align: center; }
+.medidas-bar .medida-group { display: flex; align-items: center; gap: 3px; }
+.medidas-bar .medida-group span { font-size: .75rem; color: #666; }
+.medidas-bar .medida-title { font-weight: 700; font-size: .82rem; color: #1a73e8; width: 100%; margin-bottom: 2px; }
+
+/* Google img btn */
+.img-btn { padding: 3px 6px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: .7rem; white-space: nowrap; }
+.img-btn:hover { background: #e68900; }
+
 /* Carrito tab */
 .presup-header { padding: 12px; background: #1a1a2e; color: white; }
 .presup-header h2 { font-size: 1rem; margin-bottom: 8px; }
@@ -142,6 +155,7 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
       <button class="sort-btn" data-field="desc">Descripcion</button>
       <span class="clear-sort" id="clearSort">Limpiar</span>
     </div>
+    <div class="medidas-bar" id="medidasBar"></div>
     <div class="info-bar" id="infoBar">Cargando productos...</div>
     <div class="table-wrap" id="tableWrap">
       <div id="loading">Cargando productos, espere...</div>
@@ -153,6 +167,7 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
             <th>Stk</th>
             <th style="text-align:right">Precio</th>
             <th>Cant.</th>
+            <th></th>
             <th></th>
           </tr>
         </thead>
@@ -275,56 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  function applyFilters() {
-    var q = document.getElementById('search').value.toLowerCase().trim();
-    var rubroInput = document.getElementById('filterRubro').value.trim();
-    var rubro = '';
-    if (rubroInput) {
-      if (rubroMap[rubroInput] !== undefined) rubro = rubroMap[rubroInput];
-      else if (!isNaN(rubroInput)) rubro = parseInt(rubroInput);
-      else {
-        var lc = rubroInput.toLowerCase();
-        for (var k in rubroMap) { if (k.toLowerCase().indexOf(lc) !== -1) { rubro = rubroMap[k]; break; } }
-      }
-    }
-    var subrubro = document.getElementById('filterSubRubro').value;
-    var stockF = document.getElementById('filterStock').value;
-    var terms = q ? q.split(/\s+/) : [];
-
-    filtered = [];
-    for (var i = 0; i < PRODUCTOS.length; i++) {
-      var p = PRODUCTOS[i];
-      var ok = true;
-      if (terms.length) {
-        for (var t = 0; t < terms.length; t++) {
-          if (p._search.indexOf(terms[t]) === -1) { ok = false; break; }
-        }
-      }
-      if (!ok) continue;
-      if (rubro && p.rubro != rubro) continue;
-      if (subrubro && p.subrubro != subrubro) continue;
-      if (stockF === 'pos' && p.stock <= 0) continue;
-      if (stockF === 'zero' && p.stock > 0) continue;
-      filtered.push(p);
-    }
-
-    if (sortCriteria.length) {
-      filtered.sort(function(a, b) {
-        for (var s = 0; s < sortCriteria.length; s++) {
-          var field = sortCriteria[s].field;
-          var dir = sortCriteria[s].dir;
-          var va = a[field], vb = b[field];
-          if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
-          if (va < vb) return dir === 'asc' ? -1 : 1;
-          if (va > vb) return dir === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    currentPage = 0;
-    renderTable();
-  }
+  function applyFilters() {}
 
   function renderTable() {
     var start = currentPage * PAGE_SIZE;
@@ -344,6 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '<td style="text-align:right">$' + p.precio.toLocaleString('es-AR') + '</td>' +
         '<td><input class="qty-input" type="number" min="1" value="1" data-cod="' + codEsc + '"></td>' +
         '<td><button class="add-btn" data-addcod="' + codEsc + '">+ Agregar</button></td>' +
+        '<td><button class="img-btn" data-imgq="' + codEsc + ' ' + esc(p.desc) + '">IMG</button></td>' +
         '</tr>';
     }
     tbody.innerHTML = html;
@@ -493,6 +460,218 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('filterRubro').addEventListener('input', function() { clearTimeout(rubroTimer); rubroTimer = setTimeout(applyFilters, 300); });
   document.getElementById('filterSubRubro').addEventListener('change', applyFilters);
   document.getElementById('filterStock').addEventListener('change', applyFilters);
+
+  // Google Images button
+  document.getElementById('tbody').addEventListener('click', function(e) {
+    var imgBtn = e.target.closest('.img-btn');
+    if (!imgBtn) return;
+    var q = imgBtn.dataset.imgq;
+    window.open('https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(q), '_blank');
+  });
+
+  // Adaptive measurement filters
+  var MEDIDA_CONFIG = {
+    452: { title: 'Medidas Subconjunto', fields: [{ id: 'diam', label: 'Diametro (mm)', placeholder: 'ej: 75' }] },
+    26: { title: 'Medidas Aros Cromados', fields: [
+      { id: 'diam', label: 'Diametro (mm)', placeholder: 'ej: 75' },
+      { id: 'r1', label: 'Aro 1', placeholder: 'ej: 1.2' },
+      { id: 'r2', label: 'Aro 2', placeholder: 'ej: 1.5' },
+      { id: 'r3', label: 'Aro 3', placeholder: 'ej: 2.8' },
+      { id: 'r4', label: 'Aro 4', placeholder: '' },
+      { id: 'r5', label: 'Aro 5', placeholder: '' }
+    ]},
+    32: { title: 'Medidas Aros Semi Hidraulicos', fields: [
+      { id: 'diam', label: 'Diametro (mm)', placeholder: 'ej: 75' },
+      { id: 'r1', label: 'Aro 1', placeholder: 'ej: 1.2' },
+      { id: 'r2', label: 'Aro 2', placeholder: 'ej: 1.5' },
+      { id: 'r3', label: 'Aro 3', placeholder: 'ej: 2' },
+      { id: 'r4', label: 'Aro 4', placeholder: '' },
+      { id: 'r5', label: 'Aro 5', placeholder: '' }
+    ]},
+    29: { title: 'Medidas Aros Hidraulicos', fields: [
+      { id: 'diam', label: 'Diametro (mm)', placeholder: 'ej: 75' },
+      { id: 'r1', label: 'Aro 1', placeholder: 'ej: 1.5' },
+      { id: 'r2', label: 'Aro 2', placeholder: 'ej: 2' },
+      { id: 'r3', label: 'Aro 3', placeholder: 'ej: 3' },
+      { id: 'r4', label: 'Aro 4', placeholder: '' },
+      { id: 'r5', label: 'Aro 5', placeholder: '' }
+    ]},
+    559: { title: 'Medidas Valvulas', fields: [
+      { id: 'cabeza', label: 'Cabeza (mm)', placeholder: 'ej: 28' },
+      { id: 'vastago', label: 'Vastago (mm)', placeholder: 'ej: 7' },
+      { id: 'largo', label: 'Largo (mm)', placeholder: 'ej: 104' }
+    ]},
+    1008: { title: 'Medidas Guia Valvula', fields: [
+      { id: 'interior', label: 'Interior (mm)', placeholder: 'ej: 5.5' },
+      { id: 'exterior', label: 'Exterior (mm)', placeholder: 'ej: 11' },
+      { id: 'largo', label: 'Largo (mm)', placeholder: 'ej: 41' }
+    ]},
+    421: { title: 'Medidas Reten Distrib.', fields: [
+      { id: 'interior', label: 'Interior (mm)', placeholder: 'ej: 35' },
+      { id: 'exterior', label: 'Exterior (mm)', placeholder: 'ej: 50' },
+      { id: 'alto', label: 'Alto (mm)', placeholder: 'ej: 7' }
+    ]},
+    417: { title: 'Medidas Reten Bancada', fields: [
+      { id: 'interior', label: 'Interior (mm)', placeholder: 'ej: 80' },
+      { id: 'exterior', label: 'Exterior (mm)', placeholder: 'ej: 98' },
+      { id: 'alto', label: 'Alto (mm)', placeholder: 'ej: 10' }
+    ]}
+  };
+
+  var currentMedidaRubro = null;
+
+  function getActiveRubro() {
+    var rubroInput = document.getElementById('filterRubro').value.trim();
+    if (!rubroInput) return null;
+    if (rubroMap[rubroInput] !== undefined) return rubroMap[rubroInput];
+    if (!isNaN(rubroInput)) return parseInt(rubroInput);
+    var lc = rubroInput.toLowerCase();
+    for (var k in rubroMap) { if (k.toLowerCase().indexOf(lc) !== -1) return rubroMap[k]; }
+    return null;
+  }
+
+  function updateMedidasBar() {
+    var rubro = getActiveRubro();
+    var bar = document.getElementById('medidasBar');
+    var config = rubro !== null ? MEDIDA_CONFIG[rubro] : null;
+
+    if (!config) {
+      bar.classList.remove('visible');
+      bar.innerHTML = '';
+      currentMedidaRubro = null;
+      return;
+    }
+
+    if (currentMedidaRubro === rubro) return;
+    currentMedidaRubro = rubro;
+
+    var html = '<div class="medida-title">' + config.title + '</div>';
+    for (var i = 0; i < config.fields.length; i++) {
+      var f = config.fields[i];
+      html += '<div class="medida-group"><span>' + f.label + ':</span><input type="text" id="med_' + f.id + '" placeholder="' + f.placeholder + '"></div>';
+    }
+    bar.innerHTML = html;
+    bar.classList.add('visible');
+
+    bar.querySelectorAll('input').forEach(function(inp) {
+      inp.addEventListener('input', function() { clearTimeout(searchTimer); searchTimer = setTimeout(applyFilters, 300); });
+    });
+  }
+
+  function getMedidaValues() {
+    var rubro = getActiveRubro();
+    var config = rubro !== null ? MEDIDA_CONFIG[rubro] : null;
+    if (!config) return null;
+    var vals = {};
+    var hasAny = false;
+    for (var i = 0; i < config.fields.length; i++) {
+      var el = document.getElementById('med_' + config.fields[i].id);
+      var v = el ? el.value.trim() : '';
+      vals[config.fields[i].id] = v;
+      if (v) hasAny = true;
+    }
+    return hasAny ? { rubro: rubro, vals: vals } : null;
+  }
+
+  function matchMedidas(descText, medidas) {
+    var r = medidas.rubro;
+    var v = medidas.vals;
+    var text = descText.toUpperCase().replace(/,/g, '.');
+
+    if (r === 452) {
+      if (v.diam && text.indexOf(v.diam) === -1) return false;
+    } else if (r === 26 || r === 32 || r === 29) {
+      if (v.diam && text.indexOf(v.diam) === -1) return false;
+      var espMatch = text.match(/(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)(?:\s*[xX]\s*(\d+\.?\d*))?(?:\s*[xX]\s*(\d+\.?\d*))?(?:\s*[xX]\s*(\d+\.?\d*))?/);
+      if (espMatch) {
+        var espesores = [espMatch[1], espMatch[2], espMatch[3], espMatch[4], espMatch[5]].filter(Boolean);
+        var fields = ['r1','r2','r3','r4','r5'];
+        for (var i = 0; i < fields.length; i++) {
+          if (v[fields[i]] && espesores[i] && espesores[i] !== v[fields[i]]) return false;
+          if (v[fields[i]] && !espesores[i]) return false;
+        }
+      } else if (v.r1) return false;
+    } else if (r === 559) {
+      var vMatch = text.match(/(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)/);
+      if (vMatch) {
+        if (v.cabeza && vMatch[1] !== v.cabeza) return false;
+        if (v.vastago && vMatch[2] !== v.vastago) return false;
+        if (v.largo && !vMatch[3].startsWith(v.largo)) return false;
+      } else if (v.cabeza || v.vastago || v.largo) return false;
+    } else if (r === 1008) {
+      var gMatch = text.match(/(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)/);
+      if (gMatch) {
+        if (v.interior && gMatch[1] !== v.interior) return false;
+        if (v.exterior && gMatch[2] !== v.exterior) return false;
+        if (v.largo && !gMatch[3].startsWith(v.largo)) return false;
+      } else if (v.interior || v.exterior || v.largo) return false;
+    } else if (r === 421 || r === 417) {
+      var rMatch = text.match(/(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)/);
+      if (rMatch) {
+        if (v.interior && rMatch[1] !== v.interior) return false;
+        if (v.exterior && rMatch[2] !== v.exterior) return false;
+        if (v.alto && rMatch[3] !== v.alto) return false;
+      } else if (v.interior || v.exterior || v.alto) return false;
+    }
+    return true;
+  }
+
+  // Patch applyFilters to use medidas
+  var origApplyFilters = applyFilters;
+  applyFilters = function() {
+    updateMedidasBar();
+
+    var q = document.getElementById('search').value.toLowerCase().trim();
+    var rubroInput = document.getElementById('filterRubro').value.trim();
+    var rubro = '';
+    if (rubroInput) {
+      if (rubroMap[rubroInput] !== undefined) rubro = rubroMap[rubroInput];
+      else if (!isNaN(rubroInput)) rubro = parseInt(rubroInput);
+      else {
+        var lc = rubroInput.toLowerCase();
+        for (var k in rubroMap) { if (k.toLowerCase().indexOf(lc) !== -1) { rubro = rubroMap[k]; break; } }
+      }
+    }
+    var subrubro = document.getElementById('filterSubRubro').value;
+    var stockF = document.getElementById('filterStock').value;
+    var terms = q ? q.split(/\s+/) : [];
+    var medidas = getMedidaValues();
+
+    filtered = [];
+    for (var i = 0; i < PRODUCTOS.length; i++) {
+      var p = PRODUCTOS[i];
+      var ok = true;
+      if (terms.length) {
+        for (var t = 0; t < terms.length; t++) {
+          if (p._search.indexOf(terms[t]) === -1) { ok = false; break; }
+        }
+      }
+      if (!ok) continue;
+      if (rubro && p.rubro != rubro) continue;
+      if (subrubro && p.subrubro != subrubro) continue;
+      if (stockF === 'pos' && p.stock <= 0) continue;
+      if (stockF === 'zero' && p.stock > 0) continue;
+      if (medidas && !matchMedidas(p.descL || p.desc, medidas)) continue;
+      filtered.push(p);
+    }
+
+    if (sortCriteria.length) {
+      filtered.sort(function(a, b) {
+        for (var s = 0; s < sortCriteria.length; s++) {
+          var field = sortCriteria[s].field;
+          var dir = sortCriteria[s].dir;
+          var va = a[field], vb = b[field];
+          if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
+          if (va < vb) return dir === 'asc' ? -1 : 1;
+          if (va > vb) return dir === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    currentPage = 0;
+    renderTable();
+  };
 
   document.getElementById('clearFilters').addEventListener('click', function() {
     document.getElementById('search').value = '';
