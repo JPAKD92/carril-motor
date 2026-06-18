@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carril Motor - Buscador de Productos</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: #333; }
+.header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+.header img { height: 50px; }
+.header h1 { font-size: 1.3rem; font-weight: 600; }
+.header .subtitle { font-size: .75rem; opacity: .7; }
+.main { display: flex; gap: 0; height: calc(100vh - 74px); }
+.panel-left { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.panel-right { width: 420px; background: white; border-left: 2px solid #ddd; display: flex; flex-direction: column; overflow: hidden; }
+.filters { padding: 12px 16px; background: white; border-bottom: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.filters input[type=text], .filters select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: .9rem; }
+.filters input#search { flex: 1; min-width: 250px; }
+.filters select { max-width: 160px; }
+.sort-area { padding: 8px 16px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .8rem; }
+.sort-area label { font-weight: 600; }
+.sort-btn { padding: 4px 10px; border: 1px solid #bbb; border-radius: 4px; background: white; cursor: pointer; font-size: .78rem; }
+.sort-btn:hover { background: #e8e8e8; }
+.sort-btn.active { background: #1a73e8; color: white; border-color: #1a73e8; }
+.sort-btn.active.desc::after { content: ' ▼'; }
+.sort-btn.active.asc::after { content: ' ▲'; }
+.clear-sort { color: #e53935; cursor: pointer; text-decoration: underline; font-size: .78rem; }
+.table-wrap { flex: 1; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+thead { position: sticky; top: 0; z-index: 10; }
+th { background: #1a1a2e; color: white; padding: 8px 6px; text-align: left; white-space: nowrap; font-weight: 600; }
+td { padding: 6px; border-bottom: 1px solid #eee; }
+tr:hover { background: #e3f2fd; }
+tr.out-of-stock { color: #999; }
+.stock-0 { color: #e53935; font-weight: 700; }
+.stock-pos { color: #2e7d32; font-weight: 700; }
+.add-btn { padding: 3px 8px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: .78rem; }
+.add-btn:hover { background: #1557b0; }
+input.qty-input { width: 50px; padding: 3px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
+.info-bar { padding: 6px 16px; background: #fff3e0; border-bottom: 1px solid #eee; font-size: .8rem; color: #555; }
+.presup-header { padding: 12px; background: #1a1a2e; color: white; }
+.presup-header h2 { font-size: 1rem; margin-bottom: 8px; }
+.presup-header input { width: 100%; padding: 6px 10px; border-radius: 4px; border: none; font-size: .9rem; }
+.lista-selector { display: flex; gap: 0; border-bottom: 2px solid #ddd; }
+.lista-btn { flex: 1; padding: 10px 8px; text-align: center; cursor: pointer; font-weight: 600; font-size: .85rem; background: #f5f5f5; border: none; border-bottom: 3px solid transparent; transition: .2s; }
+.lista-btn:hover { background: #e0e0e0; }
+.lista-btn.active { background: white; border-bottom-color: #1a73e8; color: #1a73e8; }
+.lista-btn .desc-pct { font-size: .7rem; font-weight: 400; display: block; color: #888; }
+.presup-items { flex: 1; overflow-y: auto; padding: 8px; }
+.presup-item { display: flex; gap: 6px; align-items: center; padding: 6px 8px; background: #fafafa; border-radius: 6px; margin-bottom: 4px; font-size: .8rem; }
+.presup-item .pi-cod { font-weight: 600; min-width: 90px; }
+.presup-item .pi-desc { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.presup-item .pi-qty { min-width: 30px; text-align: center; }
+.presup-item .pi-price { min-width: 70px; text-align: right; }
+.presup-item .pi-subtotal { min-width: 80px; text-align: right; font-weight: 600; }
+.presup-item .pi-remove { cursor: pointer; color: #e53935; font-weight: 700; padding: 0 4px; }
+.presup-footer { padding: 12px; background: #f5f5f5; border-top: 2px solid #ddd; }
+.presup-total { font-size: 1.3rem; font-weight: 700; text-align: right; color: #1a1a2e; }
+.presup-count { font-size: .8rem; color: #666; }
+.presup-actions { display: flex; gap: 8px; margin-top: 8px; }
+.presup-actions button { flex: 1; padding: 8px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: .85rem; }
+.btn-print { background: #1a73e8; color: white; }
+.btn-clear { background: #e53935; color: white; }
+.pagination { padding: 8px 16px; background: white; border-top: 1px solid #ddd; display: flex; gap: 8px; align-items: center; justify-content: center; font-size: .85rem; }
+.pagination button { padding: 4px 12px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer; }
+.pagination button:disabled { opacity: .4; cursor: default; }
+.pagination button.active-page { background: #1a73e8; color: white; border-color: #1a73e8; }
+#loading { display: flex; align-items: center; justify-content: center; height: 200px; font-size: 1.2rem; color: #888; }
+@media print {
+  .panel-left, .filters, .sort-area, .header { display: none !important; }
+  .panel-right { width: 100%; border: none; }
+  .presup-actions { display: none !important; }
+  .lista-selector { display: none !important; }
+  body { background: white; }
+  .main { height: auto; }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <img src="PARTES DE MOTOR (1).png" alt="Carril Motor">
+  <div><h1>Carril Motor</h1><div class="subtitle">Buscador de Productos</div></div>
+</div>
+<div class="main">
+  <div class="panel-left">
+    <div class="filters">
+      <input type="text" id="search" placeholder="Buscar por codigo o descripcion..." autofocus>
+      <select id="filterRubro"><option value="">Todos los rubros</option></select>
+      <select id="filterSubRubro"><option value="">Todos los sub-rubros</option></select>
+      <select id="filterStock">
+        <option value="">Todo stock</option>
+        <option value="pos">Con stock</option>
+        <option value="zero">Sin stock</option>
+      </select>
+    </div>
+    <div class="sort-area">
+      <label>Ordenar:</label>
+      <button class="sort-btn" data-field="stock">Stock</button>
+      <button class="sort-btn" data-field="precio">Precio</button>
+      <button class="sort-btn" data-field="cod">Codigo</button>
+      <button class="sort-btn" data-field="desc">Descripcion</button>
+      <span class="clear-sort" id="clearSort">Limpiar orden</span>
+    </div>
+    <div class="info-bar" id="infoBar">Cargando productos...</div>
+    <div class="table-wrap" id="tableWrap">
+      <div id="loading">Cargando productos, espere...</div>
+      <table id="mainTable" style="display:none">
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Descripcion</th>
+            <th>Stock</th>
+            <th style="text-align:right">Precio</th>
+            <th style="text-align:right">Costo</th>
+            <th>Cant.</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+  <div class="panel-right">
+    <div class="presup-header">
+      <h2>Presupuesto</h2>
+      <input type="text" id="clientName" placeholder="Nombre del cliente...">
+    </div>
+    <div class="lista-selector">
+      <button class="lista-btn active" data-lista="PLI">Lista PLI<span class="desc-pct">Sin descuento</span></button>
+      <button class="lista-btn" data-lista="TM">Lista TM<span class="desc-pct">3% descuento</span></button>
+      <button class="lista-btn" data-lista="TE">Lista TE<span class="desc-pct">7% descuento</span></button>
+    </div>
+    <div class="presup-items" id="presupItems"></div>
+    <div class="presup-footer">
+      <div class="presup-count" id="presupCount">0 items</div>
+      <div class="presup-total" id="presupTotal">$ 0</div>
+      <div class="presup-actions">
+        <button class="btn-print" onclick="printPresup()">Imprimir</button>
+        <button class="btn-clear" onclick="clearPresup()">Limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof PRODUCTOS === 'undefined' || !PRODUCTOS || !PRODUCTOS.length) {
+    document.getElementById('loading').textContent = 'Error: No se pudieron cargar los productos. Abri con ABRIR.bat';
+    return;
+  }
+
+  var PAGE_SIZE = 100;
+  var DESCUENTOS = { PLI: 0, TM: 0.03, TE: 0.07 };
+  var filtered = [];
+  var sortCriteria = [];
+  var currentPage = 0;
+  var presupuesto = [];
+  var listaActiva = 'PLI';
+  var clientName = '';
+
+  try { presupuesto = JSON.parse(localStorage.getItem('cm_presup') || '[]'); } catch(e) { presupuesto = []; }
+  try { clientName = localStorage.getItem('cm_client') || ''; } catch(e) {}
+  try { listaActiva = localStorage.getItem('cm_lista') || 'PLI'; } catch(e) {}
+
+  document.getElementById('clientName').value = clientName;
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('mainTable').style.display = '';
+
+  var rubroSet = {};
+  var subrubroSet = {};
+  var rubros = [];
+  var subrubros = [];
+  for (var i = 0; i < PRODUCTOS.length; i++) {
+    var p = PRODUCTOS[i];
+    p._search = ((p.cod || '') + ' ' + (p.desc || '')).toLowerCase();
+    if (!rubroSet[p.rubro]) { rubroSet[p.rubro] = true; rubros.push(p.rubro); }
+    if (!subrubroSet[p.subrubro]) { subrubroSet[p.subrubro] = true; subrubros.push(p.subrubro); }
+  }
+  rubros.sort(function(a,b){return a-b;});
+  subrubros.sort(function(a,b){return a-b;});
+
+  var selR = document.getElementById('filterRubro');
+  var selS = document.getElementById('filterSubRubro');
+  for (var i = 0; i < rubros.length; i++) {
+    var o = document.createElement('option'); o.value = rubros[i]; o.textContent = 'Rubro ' + rubros[i]; selR.appendChild(o);
+  }
+  for (var i = 0; i < subrubros.length; i++) {
+    var o = document.createElement('option'); o.value = subrubros[i]; o.textContent = 'Sub-rubro ' + subrubros[i]; selS.appendChild(o);
+  }
+
+  document.querySelectorAll('.lista-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.lista === listaActiva);
+    b.addEventListener('click', function() {
+      listaActiva = b.dataset.lista;
+      try { localStorage.setItem('cm_lista', listaActiva); } catch(e) {}
+      document.querySelectorAll('.lista-btn').forEach(function(x) { x.classList.toggle('active', x === b); });
+      renderPresupuesto();
+    });
+  });
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(s || ''));
+    return d.innerHTML;
+  }
+
+  function applyFilters() {
+    var q = document.getElementById('search').value.toLowerCase().trim();
+    var rubro = document.getElementById('filterRubro').value;
+    var subrubro = document.getElementById('filterSubRubro').value;
+    var stockF = document.getElementById('filterStock').value;
+    var terms = q ? q.split(/\s+/) : [];
+
+    filtered = [];
+    for (var i = 0; i < PRODUCTOS.length; i++) {
+      var p = PRODUCTOS[i];
+      var ok = true;
+      if (terms.length) {
+        for (var t = 0; t < terms.length; t++) {
+          if (p._search.indexOf(terms[t]) === -1) { ok = false; break; }
+        }
+      }
+      if (!ok) continue;
+      if (rubro && p.rubro != rubro) continue;
+      if (subrubro && p.subrubro != subrubro) continue;
+      if (stockF === 'pos' && p.stock <= 0) continue;
+      if (stockF === 'zero' && p.stock > 0) continue;
+      filtered.push(p);
+    }
+
+    if (sortCriteria.length) {
+      filtered.sort(function(a, b) {
+        for (var s = 0; s < sortCriteria.length; s++) {
+          var field = sortCriteria[s].field;
+          var dir = sortCriteria[s].dir;
+          var va = a[field], vb = b[field];
+          if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
+          if (va < vb) return dir === 'asc' ? -1 : 1;
+          if (va > vb) return dir === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    currentPage = 0;
+    renderTable();
+  }
+
+  function renderTable() {
+    var start = currentPage * PAGE_SIZE;
+    var page = filtered.slice(start, start + PAGE_SIZE);
+    var tbody = document.getElementById('tbody');
+
+    document.getElementById('infoBar').textContent = filtered.length.toLocaleString() + ' productos encontrados';
+
+    var html = '';
+    for (var i = 0; i < page.length; i++) {
+      var p = page[i];
+      var codEsc = esc(p.cod);
+      html += '<tr class="' + (p.stock <= 0 ? 'out-of-stock' : '') + '">' +
+        '<td><strong>' + codEsc + '</strong></td>' +
+        '<td title="' + esc(p.descL) + '">' + esc(p.desc) + '</td>' +
+        '<td class="' + (p.stock > 0 ? 'stock-pos' : 'stock-0') + '">' + p.stock + '</td>' +
+        '<td style="text-align:right">$' + p.precio.toLocaleString('es-AR') + '</td>' +
+        '<td style="text-align:right">$' + p.costo.toLocaleString('es-AR', {minimumFractionDigits:2}) + '</td>' +
+        '<td><input class="qty-input" type="number" min="1" value="1" data-cod="' + codEsc + '"></td>' +
+        '<td><button class="add-btn" data-addcod="' + codEsc + '">+ Agregar</button></td>' +
+        '</tr>';
+    }
+    tbody.innerHTML = html;
+    renderPagination();
+  }
+
+  document.getElementById('tbody').addEventListener('click', function(e) {
+    var btn = e.target.closest('.add-btn');
+    if (!btn) return;
+    var cod = btn.dataset.addcod;
+    var row = btn.closest('tr');
+    var qtyInput = row.querySelector('.qty-input');
+    var qty = parseInt(qtyInput.value) || 1;
+    var prod = null;
+    for (var i = 0; i < PRODUCTOS.length; i++) {
+      if (PRODUCTOS[i].cod === cod) { prod = PRODUCTOS[i]; break; }
+    }
+    if (!prod) return;
+
+    var existing = null;
+    for (var i = 0; i < presupuesto.length; i++) {
+      if (presupuesto[i].cod === cod) { existing = presupuesto[i]; break; }
+    }
+    if (existing) { existing.qty += qty; }
+    else { presupuesto.push({ cod: prod.cod, desc: prod.desc, precio: prod.precio, qty: qty }); }
+
+    savePresup();
+    renderPresupuesto();
+    qtyInput.value = 1;
+    btn.textContent = '✓ Agregado';
+    setTimeout(function() { btn.textContent = '+ Agregar'; }, 800);
+  });
+
+  function renderPagination() {
+    var totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+    var pag = document.getElementById('pagination');
+    if (totalPages <= 1) { pag.innerHTML = ''; return; }
+
+    var html = '<button ' + (currentPage === 0 ? 'disabled' : '') + ' onclick="window._goPage(' + (currentPage-1) + ')">◀</button>';
+    var pStart = Math.max(0, currentPage - 3);
+    var pEnd = Math.min(totalPages, currentPage + 4);
+    if (pStart > 0) html += '<button onclick="window._goPage(0)">1</button><span>...</span>';
+    for (var i = pStart; i < pEnd; i++) {
+      html += '<button class="' + (i===currentPage?'active-page':'') + '" onclick="window._goPage(' + i + ')">' + (i+1) + '</button>';
+    }
+    if (pEnd < totalPages) html += '<span>...</span><button onclick="window._goPage(' + (totalPages-1) + ')">' + totalPages + '</button>';
+    html += '<button ' + (currentPage===totalPages-1?'disabled':'') + ' onclick="window._goPage(' + (currentPage+1) + ')">▶</button>';
+    pag.innerHTML = html;
+  }
+
+  window._goPage = function(p) { currentPage = p; renderTable(); document.getElementById('tableWrap').scrollTop = 0; };
+
+  function renderPresupuesto() {
+    var cont = document.getElementById('presupItems');
+    var desc = DESCUENTOS[listaActiva];
+    var html = '';
+    var total = 0;
+
+    for (var i = 0; i < presupuesto.length; i++) {
+      var item = presupuesto[i];
+      var precioFinal = Math.round(item.precio * (1 - desc));
+      var subtotal = precioFinal * item.qty;
+      total += subtotal;
+      html += '<div class="presup-item">' +
+        '<span class="pi-remove" data-remcod="' + esc(item.cod) + '">&times;</span>' +
+        '<span class="pi-cod">' + esc(item.cod) + '</span>' +
+        '<span class="pi-desc" title="' + esc(item.desc) + '">' + esc(item.desc) + '</span>' +
+        '<span class="pi-qty">' + item.qty + '</span>' +
+        '<span class="pi-price">$' + precioFinal.toLocaleString('es-AR') + '</span>' +
+        '<span class="pi-subtotal">$' + subtotal.toLocaleString('es-AR') + '</span>' +
+        '</div>';
+    }
+    cont.innerHTML = html;
+
+    document.getElementById('presupTotal').textContent = '$ ' + total.toLocaleString('es-AR');
+    document.getElementById('presupCount').textContent = presupuesto.length + ' items — Lista ' + listaActiva + (desc > 0 ? ' (' + (desc*100) + '% desc.)' : '');
+  }
+
+  document.getElementById('presupItems').addEventListener('click', function(e) {
+    var rem = e.target.closest('[data-remcod]');
+    if (!rem) return;
+    var cod = rem.dataset.remcod;
+    presupuesto = presupuesto.filter(function(i) { return i.cod !== cod; });
+    savePresup();
+    renderPresupuesto();
+  });
+
+  function savePresup() { try { localStorage.setItem('cm_presup', JSON.stringify(presupuesto)); } catch(e) {} }
+
+  window.clearPresup = function() {
+    if (!confirm('Limpiar el presupuesto?')) return;
+    presupuesto = [];
+    savePresup();
+    renderPresupuesto();
+  };
+
+  window.printPresup = function() { window.print(); };
+
+  document.getElementById('clientName').addEventListener('input', function(e) {
+    clientName = e.target.value;
+    try { localStorage.setItem('cm_client', clientName); } catch(e2) {}
+  });
+
+  document.querySelectorAll('.sort-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var field = btn.dataset.field;
+      var existing = -1;
+      for (var i = 0; i < sortCriteria.length; i++) {
+        if (sortCriteria[i].field === field) { existing = i; break; }
+      }
+      if (existing >= 0) {
+        if (sortCriteria[existing].dir === 'asc') sortCriteria[existing].dir = 'desc';
+        else sortCriteria.splice(existing, 1);
+      } else {
+        sortCriteria.push({ field: field, dir: 'asc' });
+      }
+      updateSortButtons();
+      applyFilters();
+    });
+  });
+
+  document.getElementById('clearSort').addEventListener('click', function() {
+    sortCriteria = [];
+    updateSortButtons();
+    applyFilters();
+  });
+
+  function updateSortButtons() {
+    document.querySelectorAll('.sort-btn').forEach(function(btn) {
+      var s = null;
+      for (var i = 0; i < sortCriteria.length; i++) {
+        if (sortCriteria[i].field === btn.dataset.field) { s = sortCriteria[i]; break; }
+      }
+      btn.classList.toggle('active', !!s);
+      btn.classList.toggle('asc', s && s.dir === 'asc');
+      btn.classList.toggle('desc', s && s.dir === 'desc');
+    });
+  }
+
+  var searchTimer;
+  document.getElementById('search').addEventListener('input', function() { clearTimeout(searchTimer); searchTimer = setTimeout(applyFilters, 250); });
+  document.getElementById('filterRubro').addEventListener('change', applyFilters);
+  document.getElementById('filterSubRubro').addEventListener('change', applyFilters);
+  document.getElementById('filterStock').addEventListener('change', applyFilters);
+
+  applyFilters();
+  renderPresupuesto();
+});
+</script>
+</body>
+</html>
