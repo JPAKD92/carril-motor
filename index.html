@@ -598,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentMedidaRubro === rubro) return;
     currentMedidaRubro = rubro;
 
-    var html = '<div class="medida-title">' + config.title + '</div>';
+    var html = '<div class="medida-title">' + config.title + ' <span style="font-weight:400;font-size:.75rem;color:#666;">Tolerancia:</span> <input type="text" id="med_tolerancia" value="0.5" style="width:45px;font-size:.8rem;text-align:center;border:1px solid #90caf9;border-radius:4px;padding:2px 4px;"> mm</div>';
     for (var i = 0; i < config.fields.length; i++) {
       var f = config.fields[i];
       html += '<div class="medida-group"><span>' + f.label + ':</span><input type="text" id="med_' + f.id + '" placeholder="' + f.placeholder + '"></div>';
@@ -607,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
     bar.classList.add('visible');
 
     bar.querySelectorAll('input').forEach(function(inp) {
-      inp.addEventListener('input', function() { clearTimeout(searchTimer); searchTimer = setTimeout(applyFilters, 300); });
+      inp.addEventListener('input', function() { clearTimeout(searchTimer); searchTimer = setTimeout(applyFilters, 350); });
     });
   }
 
@@ -626,44 +626,78 @@ document.addEventListener('DOMContentLoaded', function() {
     return hasAny ? { rubro: rubro, vals: vals } : null;
   }
 
+  function getTolerance() {
+    var el = document.getElementById('med_tolerancia');
+    var t = el ? parseFloat(el.value) : 0.5;
+    return isNaN(t) ? 0.5 : t;
+  }
+
+  function numClose(textVal, searchVal, tol) {
+    var a = parseFloat(textVal);
+    var b = parseFloat(searchVal);
+    if (isNaN(a) || isNaN(b)) return false;
+    return Math.abs(a - b) <= tol;
+  }
+
+  function findDiameter(text) {
+    var matches = text.match(/(\d+\.?\d*)\s*MM/g);
+    if (!matches) return [];
+    return matches.map(function(m) { return parseFloat(m); });
+  }
+
   function matchMedidas(descText, medidas) {
     var r = medidas.rubro;
     var v = medidas.vals;
+    var tol = getTolerance();
     var text = descText.toUpperCase().replace(/,/g, '.');
 
     if (r === 452) {
-      if (v.diam && text.indexOf(v.diam) === -1) return false;
+      if (v.diam) {
+        var diams = findDiameter(text);
+        if (!diams.length) return false;
+        var found = false;
+        for (var d = 0; d < diams.length; d++) { if (numClose(diams[d], v.diam, tol)) { found = true; break; } }
+        if (!found) return false;
+      }
     } else if (r === 26 || r === 32 || r === 29) {
-      if (v.diam && text.indexOf(v.diam) === -1) return false;
+      if (v.diam) {
+        var diams2 = findDiameter(text);
+        if (!diams2.length) return false;
+        var found2 = false;
+        for (var d2 = 0; d2 < diams2.length; d2++) { if (numClose(diams2[d2], v.diam, tol)) { found2 = true; break; } }
+        if (!found2) return false;
+      }
       var espMatch = text.match(/(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)(?:\s*[xX]\s*(\d+\.?\d*))?(?:\s*[xX]\s*(\d+\.?\d*))?(?:\s*[xX]\s*(\d+\.?\d*))?/);
       if (espMatch) {
         var espesores = [espMatch[1], espMatch[2], espMatch[3], espMatch[4], espMatch[5]].filter(Boolean);
         var fields = ['r1','r2','r3','r4','r5'];
         for (var i = 0; i < fields.length; i++) {
-          if (v[fields[i]] && espesores[i] && espesores[i] !== v[fields[i]]) return false;
-          if (v[fields[i]] && !espesores[i]) return false;
+          if (v[fields[i]]) {
+            if (!espesores[i]) return false;
+            if (!numClose(espesores[i], v[fields[i]], tol)) return false;
+          }
         }
       } else if (v.r1) return false;
     } else if (r === 559) {
       var vMatch = text.match(/(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)/);
       if (vMatch) {
-        if (v.cabeza && vMatch[1] !== v.cabeza) return false;
-        if (v.vastago && vMatch[2] !== v.vastago) return false;
-        if (v.largo && !vMatch[3].startsWith(v.largo)) return false;
+        if (v.cabeza && !numClose(vMatch[1], v.cabeza, tol)) return false;
+        if (v.vastago && !numClose(vMatch[2], v.vastago, tol)) return false;
+        if (v.largo && !numClose(vMatch[3], v.largo, tol)) return false;
       } else if (v.cabeza || v.vastago || v.largo) return false;
     } else if (r === 1008) {
       var gMatch = text.match(/(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)/);
       if (gMatch) {
-        if (v.interior && gMatch[1] !== v.interior) return false;
-        if (v.exterior && gMatch[2] !== v.exterior) return false;
-        if (v.largo && !gMatch[3].startsWith(v.largo)) return false;
+        if (v.interior && !numClose(gMatch[1], v.interior, tol)) return false;
+        if (v.exterior && !numClose(gMatch[2], v.exterior, tol)) return false;
+        if (v.largo && !numClose(gMatch[3], v.largo, tol)) return false;
       } else if (v.interior || v.exterior || v.largo) return false;
     } else if (r === 421 || r === 417) {
       var rMatch = text.match(/(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)/);
       if (rMatch) {
-        if (v.interior && rMatch[1] !== v.interior) return false;
-        if (v.exterior && rMatch[2] !== v.exterior) return false;
-        if (v.alto && rMatch[3] !== v.alto) return false;
+        if (v.interior && !numClose(rMatch[1], v.interior, tol)) return false;
+        if (v.exterior && !numClose(rMatch[2], v.exterior, tol)) return false;
+        if (v.alto && !numClose(rMatch[3], v.alto, tol)) return false;
       } else if (v.interior || v.exterior || v.alto) return false;
     }
     return true;
