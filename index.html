@@ -93,6 +93,7 @@ input.qty-input { width: 50px; padding: 3px; text-align: center; border: 1px sol
         <option value="pos">Con stock</option>
         <option value="zero">Sin stock</option>
       </select>
+      <button id="clearFilters" style="padding:8px 12px;border:1px solid #e53935;border-radius:6px;background:#fff;color:#e53935;font-weight:600;cursor:pointer;font-size:.85rem;">Limpiar filtros</button>
     </div>
     <div class="sort-area">
       <label>Ordenar:</label>
@@ -144,6 +145,7 @@ input.qty-input { width: 50px; padding: 3px; text-align: center; border: 1px sol
   </div>
 </div>
 
+<script src="rubros.js"></script>
 <script src="data.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -175,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var subrubros = [];
   for (var i = 0; i < PRODUCTOS.length; i++) {
     var p = PRODUCTOS[i];
-    p._search = ((p.cod || '') + ' ' + (p.desc || '')).toLowerCase();
+    p._search = ((p.cod || '') + ' ' + (p.descL || '') + ' ' + (p.desc || '')).toLowerCase();
     if (!rubroSet[p.rubro]) { rubroSet[p.rubro] = true; rubros.push(p.rubro); }
     if (!subrubroSet[p.subrubro]) { subrubroSet[p.subrubro] = true; subrubros.push(p.subrubro); }
   }
@@ -185,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var selR = document.getElementById('filterRubro');
   var selS = document.getElementById('filterSubRubro');
   for (var i = 0; i < rubros.length; i++) {
-    var o = document.createElement('option'); o.value = rubros[i]; o.textContent = 'Rubro ' + rubros[i]; selR.appendChild(o);
+    var o = document.createElement('option'); o.value = rubros[i]; o.textContent = (typeof RUBRO_NAMES !== 'undefined' && RUBRO_NAMES[rubros[i]] ? RUBRO_NAMES[rubros[i]] + ' (' + rubros[i] + ')' : 'Rubro ' + rubros[i]); selR.appendChild(o);
   }
   for (var i = 0; i < subrubros.length; i++) {
     var o = document.createElement('option'); o.value = subrubros[i]; o.textContent = 'Sub-rubro ' + subrubros[i]; selS.appendChild(o);
@@ -262,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var codEsc = esc(p.cod);
       html += '<tr class="' + (p.stock <= 0 ? 'out-of-stock' : '') + '">' +
         '<td><strong>' + codEsc + '</strong></td>' +
-        '<td title="' + esc(p.descL) + '">' + esc(p.desc) + '</td>' +
+        '<td title="' + esc(p.descL) + '">' + esc(p.descL || p.desc) + '</td>' +
         '<td class="' + (p.stock > 0 ? 'stock-pos' : 'stock-0') + '">' + p.stock + '</td>' +
         '<td style="text-align:right">$' + p.precio.toLocaleString('es-AR') + '</td>' +
         '<td style="text-align:right">$' + p.costo.toLocaleString('es-AR', {minimumFractionDigits:2}) + '</td>' +
@@ -292,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (presupuesto[i].cod === cod) { existing = presupuesto[i]; break; }
     }
     if (existing) { existing.qty += qty; }
-    else { presupuesto.push({ cod: prod.cod, desc: prod.desc, precio: prod.precio, qty: qty }); }
+    else { presupuesto.push({ cod: prod.cod, desc: prod.descL || prod.desc, precio: prod.precio, qty: qty }); }
 
     savePresup();
     renderPresupuesto();
@@ -412,6 +414,16 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('filterRubro').addEventListener('change', applyFilters);
   document.getElementById('filterSubRubro').addEventListener('change', applyFilters);
   document.getElementById('filterStock').addEventListener('change', applyFilters);
+
+  document.getElementById('clearFilters').addEventListener('click', function() {
+    document.getElementById('search').value = '';
+    document.getElementById('filterRubro').value = '';
+    document.getElementById('filterSubRubro').value = '';
+    document.getElementById('filterStock').value = '';
+    sortCriteria = [];
+    updateSortButtons();
+    applyFilters();
+  });
 
   applyFilters();
   renderPresupuesto();
