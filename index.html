@@ -7,73 +7,101 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: #333; }
-.header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
-.header img { height: 50px; }
-.header h1 { font-size: 1.3rem; font-weight: 600; }
-.header .subtitle { font-size: .75rem; opacity: .7; }
-.main { display: flex; gap: 0; height: calc(100vh - 74px); }
-.panel-left { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.panel-right { width: 420px; background: white; border-left: 2px solid #ddd; display: flex; flex-direction: column; overflow: hidden; }
-.filters { padding: 12px 16px; background: white; border-bottom: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.filters input[type=text], .filters select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: .9rem; }
-.filters input#search { flex: 1; min-width: 250px; }
-.filters select { max-width: 160px; }
-.sort-area { padding: 8px 16px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .8rem; }
+.header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 10px 16px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+.header img { height: 40px; }
+.header h1 { font-size: 1.1rem; font-weight: 600; }
+.header .subtitle { font-size: .7rem; opacity: .7; }
+
+/* Tabs */
+.tab-bar { display: flex; background: white; border-bottom: 2px solid #ddd; position: sticky; top: 60px; z-index: 99; }
+.tab-btn { flex: 1; padding: 12px 8px; text-align: center; font-weight: 700; font-size: .95rem; border: none; background: #f5f5f5; cursor: pointer; border-bottom: 3px solid transparent; transition: .2s; position: relative; }
+.tab-btn:hover { background: #e8e8e8; }
+.tab-btn.active { background: white; border-bottom-color: #1a73e8; color: #1a73e8; }
+.tab-badge { background: #e53935; color: white; font-size: .65rem; padding: 1px 6px; border-radius: 10px; margin-left: 6px; font-weight: 700; }
+
+.tab-content { display: none; }
+.tab-content.active { display: flex; flex-direction: column; height: calc(100vh - 110px); }
+
+/* Productos tab */
+.filters { padding: 10px 12px; background: white; border-bottom: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.filters input[type=text], .filters select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: .9rem; }
+.filters input#search { flex: 1; min-width: 150px; }
+.filters select { flex: 1; min-width: 120px; max-width: none; }
+.filters .filter-row { display: flex; gap: 6px; width: 100%; }
+.sort-area { padding: 6px 12px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: .78rem; }
 .sort-area label { font-weight: 600; }
-.sort-btn { padding: 4px 10px; border: 1px solid #bbb; border-radius: 4px; background: white; cursor: pointer; font-size: .78rem; }
+.sort-btn { padding: 4px 8px; border: 1px solid #bbb; border-radius: 4px; background: white; cursor: pointer; font-size: .75rem; }
 .sort-btn:hover { background: #e8e8e8; }
 .sort-btn.active { background: #1a73e8; color: white; border-color: #1a73e8; }
 .sort-btn.active.desc::after { content: ' ▼'; }
 .sort-btn.active.asc::after { content: ' ▲'; }
-.clear-sort { color: #e53935; cursor: pointer; text-decoration: underline; font-size: .78rem; }
+.clear-sort { color: #e53935; cursor: pointer; text-decoration: underline; font-size: .75rem; }
+.btn-limpiar { padding: 8px 12px; border: 1px solid #e53935; border-radius: 6px; background: #fff; color: #e53935; font-weight: 600; cursor: pointer; font-size: .8rem; white-space: nowrap; }
 .table-wrap { flex: 1; overflow: auto; }
-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+table { width: 100%; border-collapse: collapse; font-size: .8rem; }
 thead { position: sticky; top: 0; z-index: 10; }
-th { background: #1a1a2e; color: white; padding: 8px 6px; text-align: left; white-space: nowrap; font-weight: 600; }
-td { padding: 6px; border-bottom: 1px solid #eee; }
+th { background: #1a1a2e; color: white; padding: 7px 5px; text-align: left; white-space: nowrap; font-weight: 600; font-size: .75rem; }
+td { padding: 5px; border-bottom: 1px solid #eee; }
 tr:hover { background: #e3f2fd; }
 tr.out-of-stock { color: #999; }
 .stock-0 { color: #e53935; font-weight: 700; }
 .stock-pos { color: #2e7d32; font-weight: 700; }
-.add-btn { padding: 3px 8px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: .78rem; }
+.add-btn { padding: 4px 8px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: .75rem; white-space: nowrap; }
 .add-btn:hover { background: #1557b0; }
-input.qty-input { width: 50px; padding: 3px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
-.info-bar { padding: 6px 16px; background: #fff3e0; border-bottom: 1px solid #eee; font-size: .8rem; color: #555; }
-.presup-header { padding: 12px; background: #1a1a2e; color: white; }
-.presup-header h2 { font-size: 1rem; margin-bottom: 8px; }
-.presup-header input { width: 100%; padding: 6px 10px; border-radius: 4px; border: none; font-size: .9rem; }
-.lista-selector { display: flex; gap: 0; border-bottom: 2px solid #ddd; }
-.lista-btn { flex: 1; padding: 10px 8px; text-align: center; cursor: pointer; font-weight: 600; font-size: .85rem; background: #f5f5f5; border: none; border-bottom: 3px solid transparent; transition: .2s; }
-.lista-btn:hover { background: #e0e0e0; }
-.lista-btn.active { background: white; border-bottom-color: #1a73e8; color: #1a73e8; }
-.lista-btn .desc-pct { font-size: .7rem; font-weight: 400; display: block; color: #888; }
-.presup-items { flex: 1; overflow-y: auto; padding: 8px; }
-.presup-item { display: flex; gap: 6px; align-items: center; padding: 6px 8px; background: #fafafa; border-radius: 6px; margin-bottom: 4px; font-size: .8rem; }
-.presup-item .pi-cod { font-weight: 600; min-width: 90px; }
-.presup-item .pi-desc { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.presup-item .pi-qty { min-width: 30px; text-align: center; }
-.presup-item .pi-price { min-width: 70px; text-align: right; }
-.presup-item .pi-subtotal { min-width: 80px; text-align: right; font-weight: 600; }
-.presup-item .pi-remove { cursor: pointer; color: #e53935; font-weight: 700; padding: 0 4px; }
-.presup-footer { padding: 12px; background: #f5f5f5; border-top: 2px solid #ddd; }
-.presup-total { font-size: 1.3rem; font-weight: 700; text-align: right; color: #1a1a2e; }
-.presup-count { font-size: .8rem; color: #666; }
-.presup-actions { display: flex; gap: 8px; margin-top: 8px; }
-.presup-actions button { flex: 1; padding: 8px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: .85rem; }
-.btn-print { background: #1a73e8; color: white; }
-.btn-clear { background: #e53935; color: white; }
-.pagination { padding: 8px 16px; background: white; border-top: 1px solid #ddd; display: flex; gap: 8px; align-items: center; justify-content: center; font-size: .85rem; }
-.pagination button { padding: 4px 12px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer; }
+input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-size: .85rem; }
+.info-bar { padding: 5px 12px; background: #fff3e0; border-bottom: 1px solid #eee; font-size: .78rem; color: #555; }
+.pagination { padding: 6px 12px; background: white; border-top: 1px solid #ddd; display: flex; gap: 4px; align-items: center; justify-content: center; font-size: .8rem; flex-wrap: wrap; }
+.pagination button { padding: 4px 10px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer; font-size: .8rem; }
 .pagination button:disabled { opacity: .4; cursor: default; }
 .pagination button.active-page { background: #1a73e8; color: white; border-color: #1a73e8; }
-#loading { display: flex; align-items: center; justify-content: center; height: 200px; font-size: 1.2rem; color: #888; }
+#loading { display: flex; align-items: center; justify-content: center; height: 200px; font-size: 1.1rem; color: #888; }
+
+/* Carrito tab */
+.presup-header { padding: 12px; background: #1a1a2e; color: white; }
+.presup-header h2 { font-size: 1rem; margin-bottom: 8px; }
+.presup-header input { width: 100%; padding: 8px 10px; border-radius: 6px; border: none; font-size: .95rem; }
+.lista-selector { display: flex; gap: 0; border-bottom: 2px solid #ddd; }
+.lista-btn { flex: 1; padding: 10px 6px; text-align: center; cursor: pointer; font-weight: 600; font-size: .85rem; background: #f5f5f5; border: none; border-bottom: 3px solid transparent; transition: .2s; }
+.lista-btn:hover { background: #e0e0e0; }
+.lista-btn.active { background: white; border-bottom-color: #1a73e8; color: #1a73e8; }
+.lista-btn .desc-pct { font-size: .65rem; font-weight: 400; display: block; color: #888; }
+.presup-items { flex: 1; overflow-y: auto; padding: 8px; }
+.presup-item { background: #fafafa; border-radius: 8px; margin-bottom: 6px; padding: 8px 10px; font-size: .82rem; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.presup-item .pi-top { display: flex; width: 100%; align-items: center; gap: 6px; }
+.presup-item .pi-cod { font-weight: 700; font-size: .78rem; color: #1a1a2e; }
+.presup-item .pi-remove { cursor: pointer; color: #e53935; font-weight: 700; font-size: 1.1rem; margin-left: auto; padding: 0 4px; }
+.presup-item .pi-desc { width: 100%; font-size: .78rem; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.presup-item .pi-bottom { display: flex; width: 100%; justify-content: space-between; align-items: center; font-size: .8rem; margin-top: 2px; }
+.presup-item .pi-qty-price { color: #666; }
+.presup-item .pi-subtotal { font-weight: 700; color: #1a1a2e; font-size: .9rem; }
+.presup-footer { padding: 12px; background: #f5f5f5; border-top: 2px solid #ddd; }
+.presup-total { font-size: 1.4rem; font-weight: 700; text-align: right; color: #1a1a2e; }
+.presup-count { font-size: .8rem; color: #666; }
+.presup-actions { display: flex; gap: 8px; margin-top: 8px; }
+.presup-actions button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: .9rem; }
+.btn-print { background: #1a73e8; color: white; }
+.btn-clear { background: #e53935; color: white; }
+
+/* Desktop: side by side */
+@media (min-width: 900px) {
+  .tab-bar { display: none; }
+  .main-wrap { display: flex; height: calc(100vh - 60px); }
+  .tab-content { display: flex !important; flex-direction: column; }
+  #tabProductos { flex: 1; min-width: 0; }
+  #tabCarrito { width: 420px; border-left: 2px solid #ddd; background: white; }
+  .tab-content.active { height: auto; }
+  .tab-content { height: auto; }
+  #tabProductos { height: calc(100vh - 60px); }
+  #tabCarrito { height: calc(100vh - 60px); }
+}
+
 @media print {
-  .panel-left, .filters, .sort-area, .header { display: none !important; }
-  .panel-right { width: 100%; border: none; }
+  .tab-bar, #tabProductos, .header { display: none !important; }
+  #tabCarrito { display: flex !important; flex-direction: column; width: 100%; border: none; height: auto !important; }
   .presup-actions { display: none !important; }
   .lista-selector { display: none !important; }
   body { background: white; }
-  .main { height: auto; }
+  .main-wrap { display: block; height: auto; }
 }
 </style>
 </head>
@@ -82,18 +110,28 @@ input.qty-input { width: 50px; padding: 3px; text-align: center; border: 1px sol
   <img src="PARTES DE MOTOR (1).png" alt="Carril Motor">
   <div><h1>Carril Motor</h1><div class="subtitle">Buscador de Productos</div></div>
 </div>
-<div class="main">
-  <div class="panel-left">
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="tabProductos">Productos</button>
+  <button class="tab-btn" data-tab="tabCarrito">Carrito <span class="tab-badge" id="cartBadge" style="display:none">0</span></button>
+</div>
+
+<div class="main-wrap">
+  <div class="tab-content active" id="tabProductos">
     <div class="filters">
       <input type="text" id="search" placeholder="Buscar por codigo o descripcion..." autofocus>
-      <select id="filterRubro"><option value="">Todos los rubros</option></select>
-      <select id="filterSubRubro"><option value="">Todos los sub-rubros</option></select>
-      <select id="filterStock">
-        <option value="">Todo stock</option>
-        <option value="pos">Con stock</option>
-        <option value="zero">Sin stock</option>
-      </select>
-      <button id="clearFilters" style="padding:8px 12px;border:1px solid #e53935;border-radius:6px;background:#fff;color:#e53935;font-weight:600;cursor:pointer;font-size:.85rem;">Limpiar filtros</button>
+      <div class="filter-row">
+        <select id="filterRubro"><option value="">Todos los rubros</option></select>
+        <select id="filterSubRubro"><option value="">Sub-rubros</option></select>
+      </div>
+      <div class="filter-row">
+        <select id="filterStock">
+          <option value="">Todo stock</option>
+          <option value="pos">Con stock</option>
+          <option value="zero">Sin stock</option>
+        </select>
+        <button id="clearFilters" class="btn-limpiar">Limpiar filtros</button>
+      </div>
     </div>
     <div class="sort-area">
       <label>Ordenar:</label>
@@ -101,7 +139,7 @@ input.qty-input { width: 50px; padding: 3px; text-align: center; border: 1px sol
       <button class="sort-btn" data-field="precio">Precio</button>
       <button class="sort-btn" data-field="cod">Codigo</button>
       <button class="sort-btn" data-field="desc">Descripcion</button>
-      <span class="clear-sort" id="clearSort">Limpiar orden</span>
+      <span class="clear-sort" id="clearSort">Limpiar</span>
     </div>
     <div class="info-bar" id="infoBar">Cargando productos...</div>
     <div class="table-wrap" id="tableWrap">
@@ -111,9 +149,8 @@ input.qty-input { width: 50px; padding: 3px; text-align: center; border: 1px sol
           <tr>
             <th>Codigo</th>
             <th>Descripcion</th>
-            <th>Stock</th>
+            <th>Stk</th>
             <th style="text-align:right">Precio</th>
-            <th style="text-align:right">Costo</th>
             <th>Cant.</th>
             <th></th>
           </tr>
@@ -123,15 +160,16 @@ input.qty-input { width: 50px; padding: 3px; text-align: center; border: 1px sol
     </div>
     <div class="pagination" id="pagination"></div>
   </div>
-  <div class="panel-right">
+
+  <div class="tab-content" id="tabCarrito">
     <div class="presup-header">
       <h2>Presupuesto</h2>
       <input type="text" id="clientName" placeholder="Nombre del cliente...">
     </div>
     <div class="lista-selector">
-      <button class="lista-btn active" data-lista="PLI">Lista PLI<span class="desc-pct">Sin descuento</span></button>
-      <button class="lista-btn" data-lista="TM">Lista TM<span class="desc-pct">3% descuento</span></button>
-      <button class="lista-btn" data-lista="TE">Lista TE<span class="desc-pct">7% descuento</span></button>
+      <button class="lista-btn active" data-lista="PLI">Lista PLI<span class="desc-pct">Sin dto</span></button>
+      <button class="lista-btn" data-lista="TM">Lista TM<span class="desc-pct">3% dto</span></button>
+      <button class="lista-btn" data-lista="TE">Lista TE<span class="desc-pct">7% dto</span></button>
     </div>
     <div class="presup-items" id="presupItems"></div>
     <div class="presup-footer">
@@ -149,6 +187,16 @@ input.qty-input { width: 50px; padding: 3px; text-align: center; border: 1px sol
 <script src="data.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
   if (typeof PRODUCTOS === 'undefined' || !PRODUCTOS || !PRODUCTOS.length) {
     document.getElementById('loading').textContent = 'Error: No se pudieron cargar los productos. Abri con ABRIR.bat';
     return;
@@ -209,6 +257,16 @@ document.addEventListener('DOMContentLoaded', function() {
     return d.innerHTML;
   }
 
+  function updateBadge() {
+    var badge = document.getElementById('cartBadge');
+    if (presupuesto.length > 0) {
+      badge.textContent = presupuesto.length;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
   function applyFilters() {
     var q = document.getElementById('search').value.toLowerCase().trim();
     var rubro = document.getElementById('filterRubro').value;
@@ -267,7 +325,6 @@ document.addEventListener('DOMContentLoaded', function() {
         '<td title="' + esc(p.descL) + '">' + esc(p.descL || p.desc) + '</td>' +
         '<td class="' + (p.stock > 0 ? 'stock-pos' : 'stock-0') + '">' + p.stock + '</td>' +
         '<td style="text-align:right">$' + p.precio.toLocaleString('es-AR') + '</td>' +
-        '<td style="text-align:right">$' + p.costo.toLocaleString('es-AR', {minimumFractionDigits:2}) + '</td>' +
         '<td><input class="qty-input" type="number" min="1" value="1" data-cod="' + codEsc + '"></td>' +
         '<td><button class="add-btn" data-addcod="' + codEsc + '">+ Agregar</button></td>' +
         '</tr>';
@@ -334,18 +391,22 @@ document.addEventListener('DOMContentLoaded', function() {
       var subtotal = precioFinal * item.qty;
       total += subtotal;
       html += '<div class="presup-item">' +
-        '<span class="pi-remove" data-remcod="' + esc(item.cod) + '">&times;</span>' +
-        '<span class="pi-cod">' + esc(item.cod) + '</span>' +
-        '<span class="pi-desc" title="' + esc(item.desc) + '">' + esc(item.desc) + '</span>' +
-        '<span class="pi-qty">' + item.qty + '</span>' +
-        '<span class="pi-price">$' + precioFinal.toLocaleString('es-AR') + '</span>' +
-        '<span class="pi-subtotal">$' + subtotal.toLocaleString('es-AR') + '</span>' +
+        '<div class="pi-top">' +
+          '<span class="pi-cod">' + esc(item.cod) + '</span>' +
+          '<span class="pi-remove" data-remcod="' + esc(item.cod) + '">&times;</span>' +
+        '</div>' +
+        '<div class="pi-desc" title="' + esc(item.desc) + '">' + esc(item.desc) + '</div>' +
+        '<div class="pi-bottom">' +
+          '<span class="pi-qty-price">' + item.qty + ' x $' + precioFinal.toLocaleString('es-AR') + '</span>' +
+          '<span class="pi-subtotal">$' + subtotal.toLocaleString('es-AR') + '</span>' +
+        '</div>' +
         '</div>';
     }
     cont.innerHTML = html;
 
     document.getElementById('presupTotal').textContent = '$ ' + total.toLocaleString('es-AR');
     document.getElementById('presupCount').textContent = presupuesto.length + ' items — Lista ' + listaActiva + (desc > 0 ? ' (' + (desc*100) + '% desc.)' : '');
+    updateBadge();
   }
 
   document.getElementById('presupItems').addEventListener('click', function(e) {
