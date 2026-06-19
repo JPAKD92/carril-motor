@@ -488,6 +488,9 @@ document.addEventListener('DOMContentLoaded', function() {
   window.clearPresup = function() {
     if (!confirm('Limpiar el presupuesto?')) return;
     presupuesto = [];
+    document.getElementById('clientName').value = '';
+    clientName = '';
+    try { localStorage.setItem('cm_client', ''); } catch(e) {}
     savePresup();
     renderPresupuesto();
   };
