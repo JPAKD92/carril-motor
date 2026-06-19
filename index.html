@@ -113,6 +113,8 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
   #tabCarrito { display: flex !important; flex-direction: column; width: 100%; border: none; height: auto !important; }
   .presup-actions { display: none !important; }
   .lista-selector { display: none !important; }
+  .presup-count .desc-info { display: none !important; }
+  .custom-item-form { display: none !important; }
   body { background: white; }
   .main-wrap { display: block; height: auto; }
 }
@@ -186,6 +188,15 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
       <button class="lista-btn active" data-lista="PLI">Lista PLI<span class="desc-pct">Sin dto</span></button>
       <button class="lista-btn" data-lista="TM">Lista TM<span class="desc-pct">3% dto</span></button>
       <button class="lista-btn" data-lista="TE">Lista TE<span class="desc-pct">7% dto</span></button>
+    </div>
+    <div class="custom-item-form" style="padding:8px 10px;background:#fff3e0;border-bottom:1px solid #ddd;">
+      <div style="font-weight:700;font-size:.8rem;margin-bottom:4px;color:#e65100;">+ Item personalizado (trabajos a medida)</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <input type="text" id="customDesc" placeholder="Descripcion..." style="flex:1;min-width:120px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:.82rem;">
+        <input type="number" id="customPrecio" placeholder="Precio" style="width:80px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:.82rem;">
+        <input type="number" id="customQty" placeholder="Cant" value="1" min="1" style="width:50px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:.82rem;">
+        <button id="addCustomItem" style="padding:5px 10px;background:#e65100;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:600;font-size:.82rem;">Agregar</button>
+      </div>
     </div>
     <div class="presup-items" id="presupItems"></div>
     <div class="presup-footer">
@@ -424,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     for (var i = 0; i < presupuesto.length; i++) {
       var item = presupuesto[i];
-      var precioFinal = Math.round(item.precio * (1 - desc));
+      var precioFinal = item.custom ? item.precio : Math.round(item.precio * (1 - desc));
       var subtotal = precioFinal * item.qty;
       total += subtotal;
       html += '<div class="presup-item">' +
@@ -442,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
     cont.innerHTML = html;
 
     document.getElementById('presupTotal').textContent = '$ ' + total.toLocaleString('es-AR');
-    document.getElementById('presupCount').textContent = presupuesto.length + ' items — Lista ' + listaActiva + (desc > 0 ? ' (' + (desc*100) + '% desc.)' : '');
+    document.getElementById('presupCount').innerHTML = presupuesto.length + ' items' + '<span class="desc-info"> — Lista ' + listaActiva + (desc > 0 ? ' (' + (desc*100) + '% desc.)' : '') + '</span>';
     updateBadge();
   }
 
@@ -711,6 +722,20 @@ document.addEventListener('DOMContentLoaded', function() {
     sortCriteria = [];
     updateSortButtons();
     applyFilters();
+  });
+
+  document.getElementById('addCustomItem').addEventListener('click', function() {
+    var desc = document.getElementById('customDesc').value.trim();
+    var precio = parseFloat(document.getElementById('customPrecio').value);
+    var qty = parseInt(document.getElementById('customQty').value) || 1;
+    if (!desc || isNaN(precio)) { alert('Completa descripcion y precio'); return; }
+    var cod = 'AA-' + Date.now().toString(36).toUpperCase();
+    presupuesto.push({ cod: cod, desc: desc, precio: precio, qty: qty, custom: true });
+    savePresup();
+    renderPresupuesto();
+    document.getElementById('customDesc').value = '';
+    document.getElementById('customPrecio').value = '';
+    document.getElementById('customQty').value = '1';
   });
 
   applyFilters();
