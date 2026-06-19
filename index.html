@@ -445,7 +445,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '</div>' +
         '<div class="pi-desc" title="' + esc(item.desc) + '">' + esc(item.desc) + '</div>' +
         '<div class="pi-bottom">' +
-          '<span class="pi-qty-price">' + item.qty + ' x $' + precioFinal.toLocaleString('es-AR') + '</span>' +
+          '<span class="pi-qty-price">' + item.qty + ' x $<input type="number" class="pi-edit-price" data-cod="' + esc(item.cod) + '" value="' + precioFinal + '" style="width:70px;border:1px solid #ccc;border-radius:3px;padding:2px 4px;font-size:.8rem;text-align:right;"></span>' +
           '<span class="pi-subtotal">$' + subtotal.toLocaleString('es-AR') + '</span>' +
         '</div>' +
         '</div>';
@@ -462,6 +462,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!rem) return;
     var cod = rem.dataset.remcod;
     presupuesto = presupuesto.filter(function(i) { return i.cod !== cod; });
+    savePresup();
+    renderPresupuesto();
+  });
+
+  document.getElementById('presupItems').addEventListener('change', function(e) {
+    var input = e.target.closest('.pi-edit-price');
+    if (!input) return;
+    var cod = input.dataset.cod;
+    var newPrice = parseFloat(input.value);
+    if (isNaN(newPrice)) return;
+    for (var i = 0; i < presupuesto.length; i++) {
+      if (presupuesto[i].cod === cod) {
+        presupuesto[i].precio = newPrice;
+        presupuesto[i].custom = true;
+        break;
+      }
+    }
     savePresup();
     renderPresupuesto();
   });
