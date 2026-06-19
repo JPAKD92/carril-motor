@@ -78,6 +78,9 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
 .lista-btn:hover { background: #e0e0e0; }
 .lista-btn.active { background: white; border-bottom-color: #1a73e8; color: #1a73e8; }
 .lista-btn .desc-pct { font-size: .65rem; font-weight: 400; display: block; color: #888; }
+.presup-items.lista-PLI { background: rgba(76,175,80,0.08); }
+.presup-items.lista-TM { background: rgba(3,169,244,0.10); }
+.presup-items.lista-TE { background: rgba(244,67,54,0.08); }
 .presup-items { flex: 1; overflow-y: auto; padding: 8px; }
 .presup-item { background: #fafafa; border-radius: 8px; margin-bottom: 6px; padding: 8px 10px; font-size: .82rem; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .presup-item .pi-top { display: flex; width: 100%; align-items: center; gap: 6px; }
@@ -115,6 +118,8 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
   .lista-selector { display: none !important; }
   .presup-count .desc-info { display: none !important; }
   .custom-item-form { display: none !important; }
+  #medioPago { display: none !important; }
+  #medioPago + label, [for="medioPago"] { display: none !important; }
   body { background: white; }
   .main-wrap { display: block; height: auto; }
 }
@@ -188,6 +193,18 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
       <button class="lista-btn active" data-lista="PLI">Lista PLI<span class="desc-pct">Sin dto</span></button>
       <button class="lista-btn" data-lista="TM">Lista TM<span class="desc-pct">3% dto</span></button>
       <button class="lista-btn" data-lista="TE">Lista TE<span class="desc-pct">7% dto</span></button>
+    </div>
+    <div style="padding:8px 12px;background:white;border-bottom:1px solid #ddd;display:flex;align-items:center;gap:8px;">
+      <label style="font-weight:600;font-size:.82rem;white-space:nowrap;">Medio de pago:</label>
+      <select id="medioPago" style="flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:.85rem;">
+        <option value="EFECTIVO">EFECTIVO</option>
+        <option value="MERCADOPAGO">MERCADOPAGO</option>
+        <option value="FACTURA EN CUENTA">FACTURA EN CUENTA</option>
+        <option value="TARJETA DE DEBITO">TARJETA DE DEBITO</option>
+        <option value="TARJETA DE CREDITO 1P">TARJETA DE CREDITO 1P</option>
+        <option value="TC3P">TARJETA DE CREDITO 3P (+11%)</option>
+        <option value="TC6P">TARJETA DE CREDITO 6P (+22%)</option>
+      </select>
     </div>
     <div class="custom-item-form" style="padding:8px 10px;background:#fff3e0;border-bottom:1px solid #ddd;">
       <div style="font-weight:700;font-size:.8rem;margin-bottom:4px;color:#e65100;">+ Item personalizado (trabajos a medida)</div>
@@ -427,16 +444,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window._goPage = function(p) { currentPage = p; renderTable(); document.getElementById('tableWrap').scrollTop = 0; };
 
+  var RECARGOS_PAGO = { 'TC3P': 0.11, 'TC6P': 0.22 };
+
+  function getMedioPago() {
+    var el = document.getElementById('medioPago');
+    return el ? el.value : 'EFECTIVO';
+  }
+
   function renderPresupuesto() {
     var cont = document.getElementById('presupItems');
     var desc = DESCUENTOS[listaActiva];
+    var medioPago = getMedioPago();
+    var recargo = RECARGOS_PAGO[medioPago] || 0;
     var html = '';
     var total = 0;
 
     for (var i = 0; i < presupuesto.length; i++) {
       var item = presupuesto[i];
       var precioFinal = item.custom ? item.precio : Math.round(item.precio * (1 - desc));
-      var subtotal = precioFinal * item.qty;
+      var precioConRecargo = Math.round(precioFinal * (1 + recargo));
+      var subtotal = precioConRecargo * item.qty;
       total += subtotal;
       html += '<div class="presup-item">' +
         '<div class="pi-top">' +
@@ -445,15 +472,19 @@ document.addEventListener('DOMContentLoaded', function() {
         '</div>' +
         '<div class="pi-desc" title="' + esc(item.desc) + '">' + esc(item.desc) + '</div>' +
         '<div class="pi-bottom">' +
-          '<span class="pi-qty-price">' + item.qty + ' x $<input type="number" class="pi-edit-price" data-cod="' + esc(item.cod) + '" value="' + precioFinal + '" style="width:70px;border:1px solid #ccc;border-radius:3px;padding:2px 4px;font-size:.8rem;text-align:right;"></span>' +
+          '<span class="pi-qty-price">' + item.qty + ' x $<input type="number" class="pi-edit-price" data-cod="' + esc(item.cod) + '" value="' + precioConRecargo + '" style="width:70px;border:1px solid #ccc;border-radius:3px;padding:2px 4px;font-size:.8rem;text-align:right;"></span>' +
           '<span class="pi-subtotal">$' + subtotal.toLocaleString('es-AR') + '</span>' +
         '</div>' +
         '</div>';
     }
     cont.innerHTML = html;
 
-    document.getElementById('presupTotal').textContent = '$ ' + total.toLocaleString('es-AR');
-    document.getElementById('presupCount').innerHTML = presupuesto.length + ' items' + '<span class="desc-info"> — Lista ' + listaActiva + (desc > 0 ? ' (' + (desc*100) + '% desc.)' : '') + '</span>';
+    cont.className = 'presup-items lista-' + listaActiva;
+
+    var totalLabel = '$ ' + total.toLocaleString('es-AR');
+    if (recargo > 0) totalLabel += ' (rec. ' + (recargo*100) + '%)';
+    document.getElementById('presupTotal').textContent = totalLabel;
+    document.getElementById('presupCount').innerHTML = presupuesto.length + ' items' + '<span class="desc-info"> — Lista ' + listaActiva + (desc > 0 ? ' (' + (desc*100) + '% desc.)' : '') + ' — ' + medioPago + '</span>';
     updateBadge();
   }
 
@@ -599,6 +630,11 @@ document.addEventListener('DOMContentLoaded', function() {
       { id: 'interior', label: 'Interior (mm)', placeholder: 'ej: 80' },
       { id: 'exterior', label: 'Exterior (mm)', placeholder: 'ej: 98' },
       { id: 'alto', label: 'Alto (mm)', placeholder: 'ej: 10' }
+    ]},
+    1001: { title: 'Medidas Asiento Valvula', fields: [
+      { id: 'interior', label: 'Interior (mm)', placeholder: 'ej: 30' },
+      { id: 'exterior', label: 'Exterior (mm)', placeholder: 'ej: 38' },
+      { id: 'alto', label: 'Alto (mm)', placeholder: 'ej: 7' }
     ]}
   };
 
@@ -723,7 +759,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (v.exterior && !numClose(gMatch[2], v.exterior, tol)) return false;
         if (v.largo && !numClose(gMatch[3], v.largo, tol)) return false;
       } else if (v.interior || v.exterior || v.largo) return false;
-    } else if (r === 421 || r === 417) {
+    } else if (r === 421 || r === 417 || r === 1001) {
       var rMatch = text.match(/(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)\s*[xX]\s*(\d+\.?\d*)/);
       if (rMatch) {
         if (v.interior && !numClose(rMatch[1], v.interior, tol)) return false;
@@ -743,6 +779,8 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSortButtons();
     applyFilters();
   });
+
+  document.getElementById('medioPago').addEventListener('change', renderPresupuesto);
 
   document.getElementById('addCustomItem').addEventListener('click', function() {
     var desc = document.getElementById('customDesc').value.trim();
