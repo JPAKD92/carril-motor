@@ -121,6 +121,7 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
   #medioPago { display: none !important; }
   #medioPago + label, [for="medioPago"] { display: none !important; }
   #descPieRow { display: none !important; }
+  #presupMedioPago { display: block !important; }
   body { background: white; }
   .main-wrap { display: block; height: auto; }
 }
@@ -219,6 +220,7 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
     <div class="presup-items" id="presupItems"></div>
     <div class="presup-footer">
       <div class="presup-count" id="presupCount">0 items</div>
+      <div id="presupMedioPago" style="font-size:.85rem;color:#333;display:none;"></div>
       <div id="presupSubtotal" style="font-size:.85rem;text-align:right;color:#666;"></div>
       <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;margin:4px 0;" id="descPieRow">
         <label style="font-size:.8rem;color:#666;">Dto. al pie:</label>
@@ -496,6 +498,9 @@ document.addEventListener('DOMContentLoaded', function() {
       totalFinal = Math.round(total * (1 - descPie / 100));
     }
     document.getElementById('presupSubtotal').textContent = subtotalLabel;
+    var mpLabel = document.getElementById('medioPago');
+    var mpText = mpLabel.options[mpLabel.selectedIndex].text;
+    document.getElementById('presupMedioPago').textContent = 'Forma de pago: ' + mpText;
 
     var totalLabel = '$ ' + totalFinal.toLocaleString('es-AR');
     if (recargo > 0) totalLabel += ' (rec. ' + (recargo*100) + '%)';
