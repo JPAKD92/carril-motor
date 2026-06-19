@@ -120,6 +120,7 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
   .custom-item-form { display: none !important; }
   #medioPago { display: none !important; }
   #medioPago + label, [for="medioPago"] { display: none !important; }
+  #descPieRow { display: none !important; }
   body { background: white; }
   .main-wrap { display: block; height: auto; }
 }
@@ -218,6 +219,12 @@ input.qty-input { width: 45px; padding: 4px; text-align: center; border: 1px sol
     <div class="presup-items" id="presupItems"></div>
     <div class="presup-footer">
       <div class="presup-count" id="presupCount">0 items</div>
+      <div id="presupSubtotal" style="font-size:.85rem;text-align:right;color:#666;"></div>
+      <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;margin:4px 0;" id="descPieRow">
+        <label style="font-size:.8rem;color:#666;">Dto. al pie:</label>
+        <input type="number" id="descPie" value="0" min="0" max="100" style="width:55px;padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:.85rem;text-align:center;">
+        <span style="font-size:.8rem;color:#666;">%</span>
+      </div>
       <div class="presup-total" id="presupTotal">$ 0</div>
       <div class="presup-actions">
         <button class="btn-print" onclick="printPresup()">Imprimir</button>
@@ -481,7 +488,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     cont.className = 'presup-items lista-' + listaActiva;
 
-    var totalLabel = '$ ' + total.toLocaleString('es-AR');
+    var descPie = parseFloat(document.getElementById('descPie').value) || 0;
+    var subtotalLabel = '';
+    var totalFinal = total;
+    if (descPie > 0 && descPie <= 100) {
+      subtotalLabel = 'Subtotal: $' + total.toLocaleString('es-AR') + ' — Dto: ' + descPie + '%';
+      totalFinal = Math.round(total * (1 - descPie / 100));
+    }
+    document.getElementById('presupSubtotal').textContent = subtotalLabel;
+
+    var totalLabel = '$ ' + totalFinal.toLocaleString('es-AR');
     if (recargo > 0) totalLabel += ' (rec. ' + (recargo*100) + '%)';
     document.getElementById('presupTotal').textContent = totalLabel;
     document.getElementById('presupCount').innerHTML = presupuesto.length + ' items' + '<span class="desc-info"> — Lista ' + listaActiva + (desc > 0 ? ' (' + (desc*100) + '% desc.)' : '') + ' — ' + medioPago + '</span>';
@@ -526,7 +542,20 @@ document.addEventListener('DOMContentLoaded', function() {
     renderPresupuesto();
   };
 
-  window.printPresup = function() { window.print(); };
+  document.getElementById('descPie').addEventListener('input', renderPresupuesto);
+
+  window.printPresup = function() {
+    var now = new Date();
+    var dd = String(now.getDate()).padStart(2,'0');
+    var mm = String(now.getMonth()+1).padStart(2,'0');
+    var aa = String(now.getFullYear()).slice(-2);
+    var fecha = dd + mm + aa;
+    var nombre = document.getElementById('clientName').value.trim() || 'SinNombre';
+    var oldTitle = document.title;
+    document.title = fecha + ' ' + nombre;
+    window.print();
+    document.title = oldTitle;
+  };
 
   document.getElementById('clientName').addEventListener('input', function(e) {
     clientName = e.target.value;
