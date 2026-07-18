@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { fmtMoney, fmtDate } from '../lib/format'
+import { provColor } from '../lib/provColor'
 import type { HistorialItem } from '../types'
 import { Undo2 } from 'lucide-react'
 
@@ -145,7 +146,12 @@ export function Historial() {
                       {r.descripcion}
                       {r.observacion && <div className="text-xs text-amber-700 mt-0.5">Obs: {r.observacion}</div>}
                     </td>
-                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{r.proveedor}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1.5 font-medium ${provColor(r.proveedor).text}`}>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${provColor(r.proveedor).dot}`} />
+                        {r.proveedor}
+                      </span>
+                    </td>
                     <td className="px-3 py-2 text-center">{r.cantidad}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">{fmtMoney(r.costo)}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap font-medium">{fmtMoney(r.costo * r.cantidad)}</td>

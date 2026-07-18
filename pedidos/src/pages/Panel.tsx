@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { fmtMoney, fmtDate } from '../lib/format'
+import { assignProvColors } from '../lib/provColor'
 import type { PedidoItem } from '../types'
 import { Trash2, Send, Package } from 'lucide-react'
 
@@ -33,6 +34,7 @@ export function Panel() {
   }, [items])
 
   const totalGeneral = useMemo(() => items.reduce((s, i) => s + i.costo * i.cantidad, 0), [items])
+  const colors = useMemo(() => assignProvColors(groups.map(([p]) => p)), [groups])
 
   const detail = selected ? groups.find(([p]) => p === selected)?.[1] ?? [] : []
   const checkedItems = detail.filter(i => checked.has(i.id))
@@ -112,13 +114,15 @@ export function Panel() {
         {groups.map(([prov, its]) => {
           const total = its.reduce((s, i) => s + i.costo * i.cantidad, 0)
           const active = selected === prov
+          const c = colors.get(prov)!
           return (
             <button key={prov} onClick={() => selectProv(prov)}
               className={`text-left border rounded-lg p-3 transition-colors ${
-                active ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 hover:border-gray-400'
+                active ? 'bg-gray-900 border-gray-900 text-white' : `${c.bg} ${c.border} hover:border-gray-500`
               }`}>
-              <div className={`font-semibold text-sm truncate ${active ? 'text-white' : 'text-gray-900'}`} title={prov}>
-                {prov}
+              <div className={`flex items-center gap-2 font-semibold text-sm ${active ? 'text-white' : c.text}`} title={prov}>
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${c.dot}`} />
+                <span className="truncate">{prov}</span>
               </div>
               <div className={`text-xs mt-1 ${active ? 'text-gray-300' : 'text-gray-500'}`}>
                 {its.length} ítem(s)
@@ -134,7 +138,10 @@ export function Panel() {
       {selected && (
         <div className="bg-white border border-gray-200 rounded-lg">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-wrap gap-2">
-            <h2 className="font-bold text-gray-900">{selected}</h2>
+            <h2 className={`flex items-center gap-2 font-bold ${(colors.get(selected) ?? assignProvColors([selected]).get(selected)!).text}`}>
+              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${(colors.get(selected) ?? assignProvColors([selected]).get(selected)!).dot}`} />
+              {selected}
+            </h2>
             {isAdmin && (
               <button onClick={pasarPedido} disabled={checkedItems.length === 0 || sending}
                 className="flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-800 disabled:opacity-40">

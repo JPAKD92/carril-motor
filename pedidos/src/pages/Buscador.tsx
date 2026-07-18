@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { fmtMoney, fmtDate } from '../lib/format'
+import { provColor } from '../lib/provColor'
 import type { CatalogoItem, PedidoItem, HistorialItem } from '../types'
 import { Search, Plus, AlertTriangle, CheckCircle2, X } from 'lucide-react'
 
@@ -243,7 +244,12 @@ export function Buscador() {
                   <tr key={item.codigo} className="hover:bg-gray-50">
                     <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">{item.codigo}</td>
                     <td className="px-3 py-2">{item.descripcion}</td>
-                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{item.proveedor}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1.5 font-medium ${provColor(item.proveedor).text}`}>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${provColor(item.proveedor).dot}`} />
+                        {item.proveedor}
+                      </span>
+                    </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">{fmtMoney(item.costo)}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       {anotado ? (
