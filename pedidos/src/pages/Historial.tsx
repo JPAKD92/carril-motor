@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { fmtMoney, fmtDate } from '../lib/format'
 import { provColor } from '../lib/provColor'
 import type { HistorialItem } from '../types'
-import { Undo2 } from 'lucide-react'
+import { Undo2, Trash2 } from 'lucide-react'
 
 const daysAgo = (n: number) => {
   const d = new Date(Date.now() - n * 24 * 60 * 60 * 1000)
@@ -71,6 +71,13 @@ export function Historial() {
     if (error) { alert('Error: ' + error.message); return }
     const { error: delError } = await supabase.from('pedido_historial').delete().eq('id', r.id)
     if (delError) alert('Se creó el pendiente pero no se pudo quitar del historial: ' + delError.message)
+    load()
+  }
+
+  async function borrar(r: HistorialItem) {
+    if (!confirm(`¿Borrar del historial "${r.descripcion.slice(0, 60)}" (cantidad ${r.cantidad}, pedido el ${fmtDate(r.fecha_pedido)})?\n\nEsto es definitivo: deja de contar para el aviso de "pedido hace menos de 15 días".`)) return
+    const { error } = await supabase.from('pedido_historial').delete().eq('id', r.id)
+    if (error) { alert('Error al borrar: ' + error.message); return }
     load()
   }
 
@@ -157,9 +164,12 @@ export function Historial() {
                     <td className="px-3 py-2 text-right whitespace-nowrap font-medium">{fmtMoney(r.costo * r.cantidad)}</td>
                     <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">{r.pedido_por_name}</td>
                     {isAdmin && (
-                      <td className="px-3 py-2 text-right">
-                        <button onClick={() => volverAPendientes(r)} className="text-gray-400 hover:text-gray-900" title="Volver a pendientes">
+                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                        <button onClick={() => volverAPendientes(r)} className="text-gray-400 hover:text-gray-900 mr-2" title="Volver a pendientes">
                           <Undo2 size={15} />
+                        </button>
+                        <button onClick={() => borrar(r)} className="text-gray-400 hover:text-red-600" title="Borrar del historial">
+                          <Trash2 size={15} />
                         </button>
                       </td>
                     )}
