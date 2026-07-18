@@ -23,6 +23,7 @@ const cleanTerm = (s: string) => s.replace(/[,()%]/g, ' ').trim()
 export function Buscador() {
   const { profile } = useAuth()
   const [q, setQ] = useState('')
+  const [provFilter, setProvFilter] = useState('')
   const [results, setResults] = useState<CatalogoItem[]>([])
   const [searching, setSearching] = useState(false)
   const [searched, setSearched] = useState(false)
@@ -52,7 +53,7 @@ export function Buscador() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     const term = q.trim()
-    if (term.length < 2) {
+    if (term.length < 2 && !provFilter) {
       setResults([])
       setSearched(false)
       return
@@ -61,6 +62,7 @@ export function Buscador() {
       setSearching(true)
       const words = cleanTerm(term).split(/\s+/).filter(Boolean)
       let query = supabase.from('pedido_catalogo').select('*').limit(100).order('codigo')
+      if (provFilter) query = query.eq('proveedor', provFilter)
       if (words.length > 0) {
         const descAnd = words.map(w => `descripcion.ilike.*${w}*`).join(',')
         const codigoFilter = `codigo.ilike.*${cleanTerm(term).replace(/\s+/g, '')}*`
@@ -71,7 +73,7 @@ export function Buscador() {
       setSearching(false)
       setSearched(true)
     }, 300)
-  }, [q])
+  }, [q, provFilter])
 
   async function checkRecent(codigo: string): Promise<HistorialItem | null> {
     if (!codigo) return null
@@ -190,15 +192,27 @@ export function Buscador() {
         </button>
       </div>
 
-      <div className="relative mb-4">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          autoFocus
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          placeholder="Buscar por código o descripción..."
-          className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-800"
-        />
+      <div className="flex gap-2 mb-4 flex-wrap sm:flex-nowrap">
+        <div className="relative flex-1 min-w-52">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            autoFocus
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Buscar por código o descripción..."
+            className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-800"
+          />
+        </div>
+        <select
+          value={provFilter}
+          onChange={e => setProvFilter(e.target.value)}
+          className={`border rounded-lg px-3 py-3 text-sm max-w-64 focus:outline-none focus:ring-2 focus:ring-gray-800 ${
+            provFilter ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-300 text-gray-700'
+          }`}
+        >
+          <option value="">Todos los proveedores</option>
+          {proveedores.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
       </div>
 
       {searching && <div className="text-sm text-gray-400 py-2">Buscando...</div>}
