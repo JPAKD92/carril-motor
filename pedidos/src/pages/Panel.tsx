@@ -1,10 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { fmtMoney, fmtDate } from '../lib/format'
 import { assignProvColors } from '../lib/provColor'
 import type { PedidoItem } from '../types'
-import { Trash2, Send, Package } from 'lucide-react'
+import { Trash2, Send, Package, FileSpreadsheet, AlertTriangle } from 'lucide-react'
+
+interface ProvConfig {
+  minimo_activo: boolean
+  monto_minimo: number
+}
+
+// El código lleva un prefijo interno de 3 letras que identifica al proveedor;
+// al exportar para el proveedor se lo quitamos.
+const codigoExterno = (codigo: string) =>
+  /^[A-Za-z]{3}/.test(codigo) && codigo.length > 3 ? codigo.slice(3) : codigo
 
 export function Panel() {
   const { profile, isAdmin } = useAuth()
@@ -14,10 +25,17 @@ export function Panel() {
   const [checked, setChecked] = useState<Set<string>>(new Set())
   const [qtyEdit, setQtyEdit] = useState<Record<string, string>>({})
   const [sending, setSending] = useState(false)
+  const [provConfig, setProvConfig] = useState<Map<string, ProvConfig>>(new Map())
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('pedido_items').select('*').order('created_at')
+    const [{ data }, { data: cfgs }] = await Promise.all([
+      supabase.from('pedido_items').select('*').order('created_at'),
+      supabase.from('pedido_proveedor_config').select('*'),
+    ])
     setItems((data ?? []) as PedidoItem[])
+    const map = new Map<string, ProvConfig>()
+    for (const c of cfgs ?? []) map.set(c.proveedor, { minimo_activo: c.minimo_activo, monto_minimo: Number(c.monto_minimo) })
+    setProvConfig(map)
     setLoading(false)
   }, [])
 
@@ -64,8 +82,34 @@ export function Panel() {
     load()
   }
 
+  const minimoCfg = selected ? provConfig.get(selected) : undefined
+  const minimoFalta = minimoCfg?.minimo_activo && checkedItems.length > 0 && checkedTotal < minimoCfg.monto_minimo
+    ? minimoCfg.monto_minimo - checkedTotal
+    : 0
+
+  function exportarExcel() {
+    if (!selected) return
+    const rows = (checkedItems.length > 0 ? checkedItems : detail).map(i => ({
+      'Código': codigoExterno(i.codigo),
+      'Descripción': i.descripcion,
+      'Cantidad': i.cantidad,
+      'Observación': i.observacion,
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    ws['!cols'] = [{ wch: 16 }, { wch: 70 }, { wch: 10 }, { wch: 30 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Pedido')
+    const fecha = new Date().toLocaleDateString('es-AR').replace(/\//g, '-')
+    const provFile = selected.replace(/[\\/:*?"<>|]/g, ' ').trim()
+    XLSX.writeFile(wb, `Pedido ${provFile} ${fecha}.xlsx`)
+  }
+
   async function pasarPedido() {
     if (!profile || checkedItems.length === 0) return
+    if (minimoCfg?.minimo_activo && checkedTotal < minimoCfg.monto_minimo) {
+      alert(`No se puede pasar el pedido: el mínimo de ${selected} es ${fmtMoney(minimoCfg.monto_minimo)} y lo seleccionado suma ${fmtMoney(checkedTotal)}.`)
+      return
+    }
     const total = fmtMoney(checkedTotal)
     if (!confirm(`¿Confirmás que pasaste el pedido a ${selected}?\n\n${checkedItems.length} ítem(s) por ${total}.\n\nLos ítems pasan al historial con fecha de hoy.`)) return
     setSending(true)
@@ -130,6 +174,20 @@ export function Panel() {
               <div className={`text-sm font-bold mt-1 ${active ? 'text-white' : 'text-gray-900'}`}>
                 {fmtMoney(total)}
               </div>
+              {(() => {
+                const cfg = provConfig.get(prov)
+                if (!cfg?.minimo_activo || cfg.monto_minimo <= 0) return null
+                const falta = cfg.monto_minimo - total
+                return falta > 0 ? (
+                  <div className={`text-xs mt-1 font-medium ${active ? 'text-amber-300' : 'text-amber-700'}`}>
+                    Mín. {fmtMoney(cfg.monto_minimo)} — faltan {fmtMoney(falta)}
+                  </div>
+                ) : (
+                  <div className={`text-xs mt-1 font-medium ${active ? 'text-green-300' : 'text-green-700'}`}>
+                    ✓ Alcanza el mínimo ({fmtMoney(cfg.monto_minimo)})
+                  </div>
+                )
+              })()}
             </button>
           )
         })}
@@ -142,14 +200,29 @@ export function Panel() {
               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${(colors.get(selected) ?? assignProvColors([selected]).get(selected)!).dot}`} />
               {selected}
             </h2>
-            {isAdmin && (
-              <button onClick={pasarPedido} disabled={checkedItems.length === 0 || sending}
-                className="flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-800 disabled:opacity-40">
-                <Send size={15} />
-                {sending ? 'Registrando...' : `Pasé el pedido (${checkedItems.length} — ${fmtMoney(checkedTotal)})`}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button onClick={exportarExcel} disabled={detail.length === 0}
+                className="flex items-center gap-2 border border-gray-300 bg-white text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
+                title="Exporta lo seleccionado (o todo si no hay nada seleccionado), sin el prefijo interno del código">
+                <FileSpreadsheet size={15} />
+                Exportar Excel{checkedItems.length > 0 ? ` (${checkedItems.length})` : ''}
               </button>
-            )}
+              {isAdmin && (
+                <button onClick={pasarPedido} disabled={checkedItems.length === 0 || sending || minimoFalta > 0}
+                  className="flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-800 disabled:opacity-40">
+                  <Send size={15} />
+                  {sending ? 'Registrando...' : `Pasé el pedido (${checkedItems.length} — ${fmtMoney(checkedTotal)})`}
+                </button>
+              )}
+            </div>
           </div>
+          {minimoFalta > 0 && (
+            <div className="flex gap-2 items-center bg-amber-50 border-b border-amber-200 text-amber-800 text-sm px-4 py-2.5">
+              <AlertTriangle size={15} className="shrink-0" />
+              El mínimo de pedido de {selected} es {fmtMoney(minimoCfg!.monto_minimo)}: lo seleccionado suma{' '}
+              {fmtMoney(checkedTotal)}, faltan {fmtMoney(minimoFalta)}.
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

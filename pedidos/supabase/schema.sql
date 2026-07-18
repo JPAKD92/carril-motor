@@ -59,6 +59,14 @@ CREATE INDEX IF NOT EXISTS idx_historial_codigo_fecha ON pedido_historial (codig
 CREATE INDEX IF NOT EXISTS idx_historial_proveedor ON pedido_historial (proveedor);
 CREATE INDEX IF NOT EXISTS idx_historial_fecha ON pedido_historial (fecha_pedido DESC);
 
+-- Configuración por proveedor (monto mínimo de pedido)
+CREATE TABLE IF NOT EXISTS pedido_proveedor_config (
+  proveedor text PRIMARY KEY,
+  minimo_activo boolean NOT NULL DEFAULT false,
+  monto_minimo numeric NOT NULL DEFAULT 0,
+  updated_at timestamptz DEFAULT now()
+);
+
 -- Vista de proveedores conocidos (para autocompletar)
 CREATE OR REPLACE VIEW pedido_proveedores WITH (security_invoker = true) AS
   SELECT DISTINCT proveedor FROM pedido_catalogo WHERE proveedor <> ''
@@ -83,6 +91,13 @@ CREATE POLICY "Authenticated read" ON pedido_items FOR SELECT TO authenticated U
 DROP POLICY IF EXISTS "Auth manage pedido_items" ON pedido_items;
 CREATE POLICY "Auth manage pedido_items" ON pedido_items FOR ALL TO authenticated
   USING (true) WITH CHECK (true);
+
+ALTER TABLE pedido_proveedor_config ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Authenticated read" ON pedido_proveedor_config;
+CREATE POLICY "Authenticated read" ON pedido_proveedor_config FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Admin manage config" ON pedido_proveedor_config;
+CREATE POLICY "Admin manage config" ON pedido_proveedor_config FOR ALL TO authenticated
+  USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 DROP POLICY IF EXISTS "Authenticated read" ON pedido_historial;
 CREATE POLICY "Authenticated read" ON pedido_historial FOR SELECT TO authenticated USING (true);

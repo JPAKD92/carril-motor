@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Search, LayoutGrid, History, Upload, Users, LogOut } from 'lucide-react'
+import { Search, LayoutGrid, History, Upload, Users, LogOut, Truck } from 'lucide-react'
 
 export function Layout() {
   const { profile, isAdmin, signOut } = useAuth()
@@ -37,6 +37,10 @@ export function Layout() {
               </Link>
               {isAdmin && (
                 <>
+                  <Link to="/proveedores" className={linkClass('/proveedores')}>
+                    <Truck size={16} />
+                    Proveedores
+                  </Link>
                   <Link to="/importar" className={linkClass('/importar')}>
                     <Upload size={16} />
                     Importar

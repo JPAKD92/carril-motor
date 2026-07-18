@@ -5,6 +5,7 @@ import { Buscador } from './pages/Buscador'
 import { Panel } from './pages/Panel'
 import { Historial } from './pages/Historial'
 import { Importar } from './pages/Importar'
+import { Proveedores } from './pages/Proveedores'
 import { Usuarios } from './pages/Usuarios'
 import { Layout } from './components/Layout'
 import type { ReactNode } from 'react'
@@ -17,8 +18,8 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: ReactNode }) {
-  const { isAdmin, loading } = useAuth()
-  if (loading) return null
+  const { session, profile, isAdmin, loading } = useAuth()
+  if (loading || (session && !profile)) return null
   if (!isAdmin) return <Navigate to="/" />
   return <>{children}</>
 }
@@ -33,6 +34,7 @@ export default function App() {
             <Route index element={<Buscador />} />
             <Route path="panel" element={<Panel />} />
             <Route path="historial" element={<Historial />} />
+            <Route path="proveedores" element={<AdminRoute><Proveedores /></AdminRoute>} />
             <Route path="importar" element={<AdminRoute><Importar /></AdminRoute>} />
             <Route path="usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
           </Route>
